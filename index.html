@@ -1,758 +1,629 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  Users, Phone, MessageCircle, FileText, CheckCircle, 
-  Clock, XCircle, DollarSign, Briefcase, Plus, 
-  Search, Bell, Menu, X, ChevronDown, Printer,
-  UserCheck, Shield, Send, Calendar, Edit,
-  Ruler, PenTool, Hammer, Upload, Image as ImageIcon, Video,
-  LayoutDashboard, FileCheck, Save, RefreshCw, Trash2
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة العملاء - بيت الخزائن</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Cairo) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-// --- Constants & Data ---
-
-const TABS = {
-  REGISTRATION: 'registration',
-  MEASUREMENTS: 'measurements',
-  DESIGN: 'design',
-  INSTALLATION: 'installation'
-};
-
-const STATUS_OPTIONS = [
-  { id: 'new', label: 'عميل جديد', color: 'bg-blue-100 text-blue-800' },
-  { id: 'potential', label: 'محتمل', color: 'bg-yellow-100 text-yellow-800' },
-  { id: 'measurements', label: 'جاري القياس', color: 'bg-purple-100 text-purple-800' },
-  { id: 'design', label: 'مرحلة التصميم', color: 'bg-indigo-100 text-indigo-800' },
-  { id: 'installation', label: 'مرحلة التركيب', color: 'bg-orange-100 text-orange-800' },
-  { id: 'completed', label: 'مكتمل', color: 'bg-green-100 text-green-800' },
-];
-
-const INITIAL_CLIENTS = [
-  { 
-    id: 1, code: 'BK-5464', name: 'أحمد محمد', phone: '0501234567', 
-    email: 'ahmed@email.com', address: 'الرياض - حي العليا', 
-    source: 'social', status: 'potential', budget: 25000, taxNo: '300012345600003',
-    projectDetails: { kitchen: 1, bedroom: 2, cladding: 0, doors: 5, vanity: 2, tvUnit: 1 },
-    notes: 'يفضل الألوان الفاتحة',
-    measurements: { status: 'pending', date: '2025-02-20' },
-    design: { status: 'pending', total: 0, firstPayment: 0 },
-    installation: { status: 'pending', jobNo: 'J-0123', startDate: '', endDate: '' }
-  },
-  { 
-    id: 2, code: 'LD-9383', name: 'سارة علي', phone: '0559876543', 
-    email: 'sara@email.com', address: 'جدة - الروضة', 
-    source: 'referral', status: 'design', budget: 45000, taxNo: '',
-    projectDetails: { kitchen: 1, bedroom: 3, cladding: 10, doors: 0, vanity: 3, tvUnit: 1 },
-    notes: '',
-    measurements: { status: 'completed', date: '2025-02-15' },
-    design: { status: 'waiting_approval', total: 55000, firstPayment: 20000 },
-    installation: { status: 'pending', jobNo: 'J-0124', startDate: '', endDate: '' }
-  }
-];
-
-// --- Helper Components ---
-
-const Card = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-xl shadow-sm border border-gray-100 ${className}`}>
-    {children}
-  </div>
-);
-
-const StatCard = ({ title, value, icon: Icon, color, subtitle }) => (
-  <Card className="p-4 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-all">
-    <div className="flex justify-between items-start z-10">
-      <div>
-        <p className="text-gray-500 text-sm font-medium mb-1">{title}</p>
-        <h3 className="text-3xl font-bold text-gray-800">{value}</h3>
-      </div>
-      <div className={`p-2 rounded-lg ${color} bg-opacity-10 text-opacity-100`}>
-        <Icon size={24} className={color.replace('bg-', 'text-').replace('100', '600')} />
-      </div>
-    </div>
-    {subtitle && <p className="text-xs text-gray-400 mt-2 z-10">{subtitle}</p>}
-    <div className={`absolute -bottom-4 -right-4 w-24 h-24 rounded-full ${color} opacity-5 group-hover:scale-110 transition-transform`}></div>
-  </Card>
-);
-
-const SectionHeader = ({ title, subtitle }) => (
-  <div className="mb-6 border-b border-gray-100 pb-4">
-    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-      <span className="w-1 h-6 bg-blue-600 rounded-full inline-block"></span>
-      {title}
-    </h2>
-    {subtitle && <p className="text-sm text-gray-500 mt-1 mr-3">{subtitle}</p>}
-  </div>
-);
-
-const CounterInput = ({ label, value, onChange }) => (
-  <div className="flex items-center justify-between bg-gray-50 p-2 rounded-lg border border-gray-200">
-    <span className="text-sm font-medium text-gray-600 px-2">{label}</span>
-    <div className="flex items-center bg-white rounded shadow-sm">
-      <button 
-        onClick={() => onChange(Math.max(0, value - 1))}
-        className="px-2 py-1 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-r"
-      >-</button>
-      <input 
-        type="number" 
-        value={value} 
-        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-        className="w-12 text-center text-sm font-bold border-x border-gray-100 py-1 focus:outline-none" 
-      />
-      <button 
-        onClick={() => onChange(value + 1)}
-        className="px-2 py-1 text-gray-500 hover:text-green-500 hover:bg-green-50 rounded-l"
-      >+</button>
-    </div>
-  </div>
-);
-
-const FileUploadZone = ({ icon: Icon, label, subLabel, colorClass = "text-blue-500 border-blue-200 bg-blue-50" }) => (
-  <div className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors hover:bg-opacity-70 ${colorClass}`}>
-    <div className="flex justify-center mb-3">
-      <div className="p-3 bg-white rounded-full shadow-sm">
-        <Icon size={24} className={colorClass.split(' ')[0]} />
-      </div>
-    </div>
-    <h4 className="font-semibold text-gray-700">{label}</h4>
-    <p className="text-xs text-gray-500 mt-1">{subLabel}</p>
-  </div>
-);
-
-// --- Main Application ---
-
-export default function CRMSystem() {
-  const [activeTab, setActiveTab] = useState(TABS.REGISTRATION);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  
-  // --- Local Storage Logic ---
-  const [clients, setClients] = useState(() => {
-    // Try to load from localStorage first
-    try {
-      const savedClients = localStorage.getItem('crm_clients_data');
-      return savedClients ? JSON.parse(savedClients) : INITIAL_CLIENTS;
-    } catch (error) {
-      console.error("Error loading from localStorage", error);
-      return INITIAL_CLIENTS;
-    }
-  });
-
-  // Save to localStorage whenever clients change
-  useEffect(() => {
-    try {
-      localStorage.setItem('crm_clients_data', JSON.stringify(clients));
-    } catch (error) {
-      console.error("Error saving to localStorage", error);
-    }
-  }, [clients]);
-
-  // States for forms (simplified for demo)
-  const [newClient, setNewClient] = useState({
-    code: 'BK-' + Math.floor(1000 + Math.random() * 9000),
-    name: '', phone: '', address: '',
-    projectDetails: { kitchen: 0, bedroom: 0, cladding: 0, doors: 0, vanity: 0, tvUnit: 0 }
-  });
-
-  const [selectedClientForMeasure, setSelectedClientForMeasure] = useState(null);
-
-  // --- Handlers ---
-  const handleClientChange = (field, value) => {
-    setNewClient(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleProjectDetailChange = (key, value) => {
-    setNewClient(prev => ({
-      ...prev,
-      projectDetails: { ...prev.projectDetails, [key]: value }
-    }));
-  };
-
-  const saveNewClient = () => {
-    const client = { ...newClient, id: Date.now(), status: 'new', date: new Date().toLocaleDateString('en-US') };
-    setClients([client, ...clients]);
-    alert('تم حفظ بيانات العميل بنجاح');
-    // Reset form
-    setNewClient({
-      code: 'BK-' + Math.floor(1000 + Math.random() * 9000),
-      name: '', phone: '', address: '',
-      projectDetails: { kitchen: 0, bedroom: 0, cladding: 0, doors: 0, vanity: 0, tvUnit: 0 }
-    });
-  };
-
-  const resetData = () => {
-    if(window.confirm('هل أنت متأكد من رغبتك في حذف جميع البيانات واستعادة البيانات الافتراضية؟')) {
-      setClients(INITIAL_CLIENTS);
-      localStorage.removeItem('crm_clients_data');
-    }
-  };
-
-  // --- Views ---
-
-  const RegistrationView = () => (
-    <div className="animate-fadeIn space-y-6">
-      {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="إجمالي العملاء" value={clients.length} icon={Users} color="text-blue-600 bg-blue-100" />
-        <StatCard title="مشاريع نشطة" value="5" icon={Briefcase} color="text-yellow-600 bg-yellow-100" />
-        <StatCard title="مشاريع مكتملة" value="12" icon={CheckCircle} color="text-green-600 bg-green-100" />
-        <StatCard title="عملاء محتملون" value="3" icon={UserCheck} color="text-red-600 bg-red-100" />
-      </div>
-
-      {/* Filter Bar */}
-      <Card className="p-4 flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex items-center gap-2 text-gray-500">
-          <FilterIcon className="w-5 h-5" />
-          <span className="font-medium">تصفية القائمة:</span>
-        </div>
-        <div className="flex gap-4 flex-1 max-w-2xl">
-          <select className="flex-1 bg-gray-50 border-gray-200 rounded-lg text-sm p-2.5 focus:ring-blue-500 focus:border-blue-500">
-            <option>جميع الحالات</option>
-            {STATUS_OPTIONS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
-          <select className="flex-1 bg-gray-50 border-gray-200 rounded-lg text-sm p-2.5 focus:ring-blue-500 focus:border-blue-500">
-            <option>جميع المصادر</option>
-            <option>معرض</option>
-            <option>سوشيال ميديا</option>
-          </select>
-        </div>
-        <button onClick={resetData} className="text-red-600 text-sm hover:underline">إعادة تعيين البيانات</button>
-      </Card>
-
-      {/* Main Form */}
-      <Card className="p-6 border-t-4 border-t-blue-500">
-        <SectionHeader title="بيانات العميل الجديد" subtitle="أدخل المعلومات الأساسية وتفاصيل المشروع" />
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f3f5f9;
+        }
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700">كود العميل <span className="text-red-500">*</span></label>
-            <input type="text" value={newClient.code} readOnly className="w-full bg-gray-100 border-gray-200 rounded-lg p-2.5 text-gray-500 text-center font-mono" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700">الاسم الكامل <span className="text-red-500">*</span></label>
-            <input type="text" placeholder="اسم العميل" value={newClient.name} onChange={(e) => handleClientChange('name', e.target.value)} className="w-full border-gray-200 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 transition-all" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700">رقم الجوال <span className="text-red-500">*</span></label>
-            <input type="text" placeholder="05xxxxxxxx" value={newClient.phone} onChange={(e) => handleClientChange('phone', e.target.value)} className="w-full border-gray-200 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 transition-all text-left dir-ltr" />
-          </div>
-          
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700">حالة العميل</label>
-            <select className="w-full border-gray-200 rounded-lg p-2.5 bg-white">
-              <option>محتمل</option>
-              <option>جاد</option>
-            </select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700">الرقم الضريبي</label>
-            <input type="text" placeholder="اختياري" className="w-full border-gray-200 rounded-lg p-2.5" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700">الميزانية المقترحة</label>
-            <div className="relative">
-              <input type="number" placeholder="ريال" className="w-full border-gray-200 rounded-lg p-2.5 pr-8" />
-              <span className="absolute left-3 top-2.5 text-gray-400 text-xs">SAR</span>
-            </div>
-          </div>
-          
-          <div className="md:col-span-1 space-y-1">
-            <label className="text-xs font-bold text-gray-700">رقم إضافي</label>
-            <input type="text" className="w-full border-gray-200 rounded-lg p-2.5" />
-          </div>
-          <div className="md:col-span-2 space-y-1">
-            <label className="text-xs font-bold text-gray-700">العنوان التفصيلي (المدينة، الحي)</label>
-            <div className="flex gap-2">
-              <input type="text" placeholder="المدينة، الحي..." value={newClient.address} onChange={(e) => handleClientChange('address', e.target.value)} className="w-full border-gray-200 rounded-lg p-2.5 flex-1" />
-              <input type="text" placeholder="رابط الموقع (Maps)" className="w-1/3 border-gray-200 rounded-lg p-2.5" />
-            </div>
-          </div>
-        </div>
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
 
-        <div className="bg-gray-50/50 p-4 rounded-xl border border-dashed border-gray-200 mb-6">
-          <label className="text-xs font-bold text-blue-600 mb-3 block">تفاصيل المشاريع المطلوبة:</label>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <CounterInput label="مطبخ" value={newClient.projectDetails.kitchen} onChange={(v) => handleProjectDetailChange('kitchen', v)} />
-            <CounterInput label="غرفة نوم" value={newClient.projectDetails.bedroom} onChange={(v) => handleProjectDetailChange('bedroom', v)} />
-            <CounterInput label="تجليد" value={newClient.projectDetails.cladding} onChange={(v) => handleProjectDetailChange('cladding', v)} />
-            <CounterInput label="وحدة TV" value={newClient.projectDetails.tvUnit} onChange={(v) => handleProjectDetailChange('tvUnit', v)} />
-            <CounterInput label="أبواب" value={newClient.projectDetails.doors} onChange={(v) => handleProjectDetailChange('doors', v)} />
-            <CounterInput label="مغاسل" value={newClient.projectDetails.vanity} onChange={(v) => handleProjectDetailChange('vanity', v)} />
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <textarea 
-            placeholder="ملاحظات إضافية على العميل..." 
-            className="w-full border-gray-200 rounded-lg p-4 h-24 text-sm focus:ring-2 focus:ring-blue-500 resize-none"
-          ></textarea>
-        </div>
-
-        <div className="flex gap-3">
-          <Button onClick={saveNewClient} icon={Save}>حفظ البيانات</Button>
-          <Button variant="secondary" icon={RefreshCw}>تصفية</Button>
-        </div>
-      </Card>
-
-      {/* Clients Table */}
-      <Card className="overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-          <h3 className="font-bold text-gray-700">سجل العملاء</h3>
-          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">{clients.length} عميل</span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-right text-sm">
-            <thead className="bg-white text-gray-500 border-b border-gray-100">
-              <tr>
-                <th className="py-3 px-4 font-medium">الكود</th>
-                <th className="py-3 px-4 font-medium">بيانات العميل</th>
-                <th className="py-3 px-4 font-medium">المشاريع</th>
-                <th className="py-3 px-4 font-medium">المصدر</th>
-                <th className="py-3 px-4 font-medium">الحالة</th>
-                <th className="py-3 px-4 font-medium text-center">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {clients.map(client => (
-                <tr key={client.id} className="hover:bg-blue-50/20 transition-colors">
-                  <td className="py-3 px-4 font-mono text-blue-600 font-semibold">{client.code}</td>
-                  <td className="py-3 px-4">
-                    <p className="font-bold text-gray-800">{client.name}</p>
-                    <p className="text-xs text-gray-500">{client.phone}</p>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex gap-1 flex-wrap">
-                      {Object.entries(client.projectDetails).map(([key, val]) => 
-                        val > 0 && <span key={key} className="text-[10px] bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded">{key === 'kitchen' ? 'مطبخ' : key === 'bedroom' ? 'غرفة' : key} ({val})</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-gray-600">{client.source === 'social' ? 'سوشيال' : 'إحالة'}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_OPTIONS.find(s => s.id === client.status)?.color || 'bg-gray-100'}`}>
-                      {STATUS_OPTIONS.find(s => s.id === client.status)?.label || client.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 flex justify-center gap-2">
-                    <button className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Edit size={16} /></button>
-                    <button 
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
-                      onClick={() => {
-                        if(window.confirm('حذف هذا العميل؟')) {
-                          setClients(clients.filter(c => c.id !== client.id));
-                        }
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </div>
-  );
-
-  const MeasurementsView = () => (
-    <div className="animate-fadeIn space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard title="إجمالي الملفات" value="156" icon={FileText} color="text-indigo-600 bg-indigo-100" />
-        <StatCard title="ملفات هذا الشهر" value="24" icon={Calendar} color="text-purple-600 bg-purple-100" />
-        <StatCard title="صور وفيديوهات" value="890" icon={ImageIcon} color="text-pink-600 bg-pink-100" />
-      </div>
-
-      <Card className="p-6 border-t-4 border-t-indigo-500">
-        <SectionHeader title="تفاصيل المشروع والمقاسات" subtitle="رفع ملفات الرفع المساحي والصور الموقعية" />
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700">اسم العميل <span className="text-red-500">*</span></label>
-            <select 
-              className="w-full border-gray-200 rounded-lg p-2.5 bg-white focus:ring-indigo-500"
-              onChange={(e) => {
-                const client = clients.find(c => c.id === parseInt(e.target.value));
-                setSelectedClientForMeasure(client);
-              }}
-            >
-              <option value="">اختر عميل...</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700">كود العميل</label>
-            <input type="text" readOnly value={selectedClientForMeasure?.code || ''} className="w-full bg-gray-50 border-gray-200 rounded-lg p-2.5 text-gray-500" placeholder="LD-xxxxx" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700">تاريخ التسجيل</label>
-            <input type="date" className="w-full border-gray-200 rounded-lg p-2.5" />
-          </div>
-        </div>
+        .active-nav-item {
+            background-color: #1a4b82;
+            color: white;
+            border-right: 4px solid #e5b57f;
+        }
+        .inactive-nav-item {
+            color: #dbeafe; /* blue-100 */
+            border-right: 4px solid transparent;
+        }
+        .inactive-nav-item:hover {
+            background-color: #0a2342;
+            color: white;
+        }
+    </style>
+</head>
+<body class="text-gray-800 h-screen flex overflow-hidden">
 
-        <div className="bg-indigo-50/30 p-4 rounded-xl border border-indigo-100 mb-6">
-          <h4 className="text-sm font-bold text-indigo-700 mb-3">كميات المشروع المطلوبة (من التسجيل):</h4>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 opacity-75">
-             {/* Read-only counters mimicking the previous page */}
-             <div className="bg-white p-2 rounded border text-center"><span className="text-xs text-gray-500 block">مطبخ</span><span className="font-bold">{selectedClientForMeasure?.projectDetails?.kitchen || 0}</span></div>
-             <div className="bg-white p-2 rounded border text-center"><span className="text-xs text-gray-500 block">نوم</span><span className="font-bold">{selectedClientForMeasure?.projectDetails?.bedroom || 0}</span></div>
-             <div className="bg-white p-2 rounded border text-center"><span className="text-xs text-gray-500 block">تجليد</span><span className="font-bold">{selectedClientForMeasure?.projectDetails?.cladding || 0}</span></div>
-             {/* ... others */}
-          </div>
-        </div>
-
-        <div className="space-y-4 mb-6">
-          <label className="text-sm font-bold text-gray-700 block">ملفات الميديا (فيديو / كروكي / صور):</label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FileUploadZone icon={Video} label="رفع فيديو للموقع" subLabel="MP4, MOV up to 50MB" colorClass="bg-blue-50 border-blue-200 text-blue-500" />
-            <FileUploadZone icon={PenTool} label="رفع كروكي القياسات" subLabel="PDF, PNG, JPG" colorClass="bg-purple-50 border-purple-200 text-purple-500" />
-          </div>
-          <FileUploadZone icon={ImageIcon} label="اضغط لرفع صور الموقع (متعدد)" subLabel="JPG, PNG - صور واضحة للزوايا" colorClass="bg-gray-50 border-gray-300 text-gray-500" />
-        </div>
-
-        <div className="mb-6">
-           <textarea placeholder="تفاصيل الزيارة والملاحظات الفنية..." className="w-full border-gray-200 rounded-lg p-3 h-20 text-sm focus:ring-indigo-500"></textarea>
-        </div>
-
-        <div className="flex gap-3">
-          <Button icon={Save} className="bg-indigo-600 hover:bg-indigo-700">حفظ الملفات</Button>
-          <Button icon={CheckCircle} className="bg-green-600 hover:bg-green-700">تحويل للتصميم</Button>
-        </div>
-      </Card>
-      
-      <Card className="p-4 bg-gray-50">
-        <h3 className="font-bold text-gray-600 mb-2">سجل الملفات المرفوعة مؤخراً</h3>
-        <div className="text-center text-gray-400 py-4 border-2 border-dashed rounded-lg">لا توجد ملفات حديثة</div>
-      </Card>
-    </div>
-  );
-
-  const DesignView = () => (
-    <div className="animate-fadeIn grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
-      {/* Left Column: Pricing & Contract */}
-      <div className="lg:col-span-2 space-y-6">
-        <Card className="p-6 border-t-4 border-t-purple-500 h-full overflow-y-auto">
-          <SectionHeader title="التسعير والعقد" subtitle="إصدار الكوتيشن، ومتابعة الموافقات" />
-          
-          <div className="space-y-6">
-            <div className="bg-purple-50 p-6 rounded-xl border border-purple-100">
-               <div className="space-y-4">
-                 <div className="space-y-1">
-                   <label className="text-sm font-bold text-gray-700">قيمة الكوتيشن الإجمالية (ريال سعودي)</label>
-                   <input type="number" placeholder="مثال: 55000" className="w-full text-lg font-bold text-purple-700 border-gray-300 rounded-lg p-3 focus:ring-purple-500" />
-                 </div>
-                 <div className="space-y-1">
-                   <label className="text-sm font-bold text-gray-700">قيمة الدفعة الأولى (ريال سعودي)</label>
-                   <input type="number" placeholder="مثال: 20000" className="w-full border-gray-300 rounded-lg p-3" />
-                 </div>
-               </div>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="bg-[#0f3057] text-white w-64 flex-shrink-0 flex flex-col transition-all duration-300 shadow-xl z-20 h-full md:relative absolute transform -translate-x-full md:translate-x-0">
+        <div class="p-6 flex flex-col items-center border-b border-blue-900/50">
+            <div class="w-16 h-16 bg-[#e5b57f] rounded-xl flex items-center justify-center mb-3 shadow-lg transform rotate-3">
+                <i data-lucide="briefcase" class="text-[#0f3057] w-8 h-8"></i>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700">ارفاق صورة الكوتيشن الموقع</label>
-              <div className="flex gap-2">
-                 <input type="file" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" />
-              </div>
-              <div className="h-32 bg-gray-50 border-2 border-dashed rounded-lg flex items-center justify-center text-gray-400">
-                لا يوجد صورة مرفوعة
-              </div>
-            </div>
-
-            <div className="pt-6 border-t">
-               <div className="space-y-4">
-                 <div className="space-y-1">
-                    <label className="text-sm font-bold text-gray-700">حالة الموافقة على التصميم</label>
-                    <select className="w-full border-gray-300 rounded-lg p-3">
-                      <option>بانتظار موافقة العميل</option>
-                      <option>تم الاعتماد</option>
-                      <option>مرفوض / تعديل</option>
-                    </select>
-                 </div>
-                 <div className="flex items-center gap-2">
-                   <input type="checkbox" id="signed" className="w-4 h-4 text-purple-600 rounded" />
-                   <label htmlFor="signed" className="font-bold text-gray-700 select-none">تأكيد توقيع العميل على العقد</label>
-                 </div>
-               </div>
-               
-               <div className="flex gap-3 mt-6">
-                 <Button className="flex-1 bg-purple-600 hover:bg-purple-700">حفظ وإصدار العقد</Button>
-                 <Button variant="secondary" className="px-6">إعادة تعيين</Button>
-               </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Right Column: Preview & Comments */}
-      <div className="lg:col-span-1 space-y-4">
-        <Card className="p-4 h-full flex flex-col">
-          <h3 className="font-bold text-gray-700 mb-4 border-b pb-2">معاينة التصميم</h3>
-          
-          <div className="flex-1 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 mb-4 min-h-[200px]">
-            <div className="text-center">
-              <ImageIcon className="mx-auto mb-2 opacity-50" size={32} />
-              <span>لا يوجد تصميم مرفوع</span>
-            </div>
-          </div>
-
-          <div className="space-y-2 mb-4">
-            <label className="text-sm font-bold text-gray-700">تعليمات للعميل / ملاحظات</label>
-            <textarea placeholder="ملاحظات حول التصميم..." className="w-full border-gray-200 rounded-lg p-3 h-32 resize-none text-sm"></textarea>
-          </div>
-
-          <div className="flex gap-2 mt-auto">
-            <Button className="w-full bg-blue-500 hover:bg-blue-600" icon={Send}>إرسال للمراجعة</Button>
-            <Button variant="secondary">تفريغ</Button>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-
-  const InstallationView = () => (
-    <div className="animate-fadeIn space-y-6">
-      {/* Installation Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="إجمالي التركيبات" value="45" icon={Hammer} color="text-orange-600 bg-orange-100" />
-        <StatCard title="جاري التركيب" value="8" icon={Clock} color="text-yellow-600 bg-yellow-100" />
-        <StatCard title="مكتملة" value="32" icon={CheckCircle} color="text-green-600 bg-green-100" />
-        <StatCard title="متأخرة" value="2" icon={XCircle} color="text-red-600 bg-red-100" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Uploads */}
-        <div className="lg:col-span-1 space-y-6">
-           <Card className="p-5">
-             <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-               <ImageIcon size={18} className="text-green-600" /> صور وفيديو ما بعد التركيب
-             </h4>
-             <div className="border-2 border-dashed border-green-200 bg-green-50 rounded-xl p-8 text-center cursor-pointer hover:bg-green-100 transition-colors">
-               <Upload className="mx-auto text-green-500 mb-2" />
-               <p className="text-sm text-green-700 font-medium">اسحب الملفات هنا</p>
-               <p className="text-xs text-green-500">أو انقر للاختيار</p>
-             </div>
-             <Button className="w-full mt-4 bg-blue-500 hover:bg-blue-600" icon={CheckCircle}>تأكيد الاستلام</Button>
-           </Card>
-
-           <Card className="p-5">
-             <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-               <FileCheck size={18} className="text-purple-600" /> إرفاق إثبات التسليم
-             </h4>
-             <div className="border-2 border-dashed border-purple-200 bg-purple-50 rounded-xl p-8 text-center cursor-pointer hover:bg-purple-100 transition-colors">
-               <FileText className="mx-auto text-purple-500 mb-2" />
-               <p className="text-sm text-purple-700 font-medium">اسحب صورة الإثبات</p>
-             </div>
-             <Button className="w-full mt-4 bg-purple-600 hover:bg-purple-700" icon={Save}>حفظ</Button>
-           </Card>
+            <h1 class="text-lg font-bold tracking-wider">بيت الخزائن</h1>
+            <p class="text-xs text-blue-300">للحلول المتكاملة</p>
         </div>
 
-        {/* Right: Project Details Form */}
-        <div className="lg:col-span-2">
-          <Card className="p-6 border-t-4 border-t-orange-500">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                <Edit className="text-orange-500" size={20} /> تفاصيل المشروع
-              </h3>
-              <div className="flex gap-2">
-                <Button className="bg-blue-500 text-xs px-3">+ جدولة تركيب جديدة</Button>
-                <button className="p-2 border rounded-lg hover:bg-gray-50"><Calendar size={18} /></button>
-              </div>
-            </div>
+        <nav class="flex-1 px-3 space-y-1 mt-6 overflow-y-auto custom-scrollbar">
+            <button class="w-full flex items-center gap-3 px-4 py-3 my-1 rounded-r-lg transition-all duration-200 inactive-nav-item">
+                <i data-lucide="users" class="w-4 h-4 opacity-70"></i>
+                <span class="font-medium text-sm tracking-wide">المستخدمين</span>
+            </button>
+            <button class="w-full flex items-center gap-3 px-4 py-3 my-1 rounded-r-lg transition-all duration-200 inactive-nav-item">
+                <i data-lucide="shield" class="w-4 h-4 opacity-70"></i>
+                <span class="font-medium text-sm tracking-wide">الصلاحيات</span>
+            </button>
+            
+            <div class="my-2 border-t border-blue-800/50"></div>
+            
+            <button onclick="switchTab('registration')" id="nav-registration" class="w-full flex items-center gap-3 px-4 py-3 my-1 rounded-r-lg transition-all duration-200 active-nav-item">
+                <i data-lucide="user-check" class="w-4 h-4"></i>
+                <span class="font-medium text-sm tracking-wide">تسجيل العملاء</span>
+            </button>
+            <button onclick="switchTab('measurements')" id="nav-measurements" class="w-full flex items-center gap-3 px-4 py-3 my-1 rounded-r-lg transition-all duration-200 inactive-nav-item">
+                <i data-lucide="ruler" class="w-4 h-4 opacity-70"></i>
+                <span class="font-medium text-sm tracking-wide">أخذ المقاسات</span>
+            </button>
+            <button onclick="switchTab('design')" id="nav-design" class="w-full flex items-center gap-3 px-4 py-3 my-1 rounded-r-lg transition-all duration-200 inactive-nav-item">
+                <i data-lucide="pen-tool" class="w-4 h-4 opacity-70"></i>
+                <span class="font-medium text-sm tracking-wide">التصميم والتسعير</span>
+            </button>
+            <button onclick="switchTab('installation')" id="nav-installation" class="w-full flex items-center gap-3 px-4 py-3 my-1 rounded-r-lg transition-all duration-200 inactive-nav-item">
+                <i data-lucide="hammer" class="w-4 h-4 opacity-70"></i>
+                <span class="font-medium text-sm tracking-wide">مرحلة التركيب</span>
+            </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600">رقم الوظيفة</label>
-                <input type="text" placeholder="مثال: J-0123" className="w-full border-gray-200 rounded-lg p-2.5 bg-gray-50 text-right font-mono" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600">اسم العميل</label>
-                <input type="text" placeholder="مثال: أحمد محمد" className="w-full border-gray-200 rounded-lg p-2.5" />
-              </div>
-              
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600">تاريخ بدء التركيب</label>
-                <input type="date" className="w-full border-gray-200 rounded-lg p-2.5" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600">تاريخ الانتهاء المتوقع</label>
-                <input type="date" className="w-full border-gray-200 rounded-lg p-2.5" />
-              </div>
-              
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600">تاريخ الاستلام الفعلي</label>
-                <input type="date" className="w-full border-gray-200 rounded-lg p-2.5" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600">حالة العمل</label>
-                <select className="w-full border-gray-200 rounded-lg p-2.5 bg-white">
-                   <option>قيد التنفيذ</option>
-                   <option>معلق</option>
-                   <option>مكتمل</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600">الدفعة الأولى (ريال)</label>
-                <input type="number" placeholder="2000" className="w-full border-gray-200 rounded-lg p-2.5" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600">الدفعة الأخيرة (ريال)</label>
-                <input type="number" placeholder="10000" className="w-full border-gray-200 rounded-lg p-2.5" />
-              </div>
-            </div>
-
-            <div className="mt-6 bg-orange-50 border border-orange-200 p-4 rounded-lg flex gap-3 items-start">
-              <Clock className="text-orange-500 mt-0.5" size={20} />
-              <div>
-                <h5 className="font-bold text-orange-800 text-sm">ملاحظة المهلة</h5>
-                <p className="text-xs text-orange-700 mt-1">مهلة الاستلام 45 يوماً. في حال مرور 30 يوماً دون استلام، يجب سداد باقي قيمة المشروع المنفذ.</p>
-              </div>
-            </div>
-
-            <div className="mt-6 flex gap-3 justify-end">
-               <Button variant="secondary" icon={RefreshCw}>إعادة تعيين</Button>
-               <Button className="bg-blue-600 hover:bg-blue-700" icon={Save}>تحديث</Button>
-            </div>
-          </Card>
-        </div>
-      </div>
-      
-      {/* History Table */}
-      <Card className="overflow-hidden mt-6">
-        <div className="p-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 flex items-center gap-2">
-          <LayoutDashboard size={18} /> تاريخ التركيبات
-        </div>
-        <div className="p-8 text-center text-gray-400">لا توجد بيانات تركيبات سابقة</div>
-      </Card>
-    </div>
-  );
-
-  return (
-    <div dir="rtl" className="flex h-screen bg-[#f3f5f9] font-sans text-gray-800">
-      {/* Sidebar */}
-      <aside className={`bg-[#0f3057] text-white w-64 flex-shrink-0 flex flex-col transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full absolute z-20 h-full' } md:relative md:translate-x-0 shadow-xl`}>
-        <div className="p-6 flex flex-col items-center border-b border-blue-900/50">
-          <div className="w-16 h-16 bg-[#e5b57f] rounded-xl flex items-center justify-center mb-3 shadow-lg transform rotate-3">
-            <Briefcase className="text-[#0f3057]" size={32} />
-          </div>
-          <h1 className="text-lg font-bold tracking-wider">بيت الخزائن</h1>
-          <p className="text-xs text-blue-300">للحلول المتكاملة</p>
-        </div>
-
-        <nav className="flex-1 px-3 space-y-1 mt-6 overflow-y-auto custom-scrollbar">
-          <NavItem icon={Users} label="المستخدمين" />
-          <NavItem icon={Shield} label="الصلاحيات" />
-          <div className="my-2 border-t border-blue-800/50"></div>
-          
-          <NavItem 
-            icon={UserCheck} 
-            label="تسجيل العملاء" 
-            active={activeTab === TABS.REGISTRATION} 
-            onClick={() => setActiveTab(TABS.REGISTRATION)} 
-          />
-          <NavItem 
-            icon={Ruler} 
-            label="أخذ المقاسات" 
-            active={activeTab === TABS.MEASUREMENTS} 
-            onClick={() => setActiveTab(TABS.MEASUREMENTS)} 
-          />
-          <NavItem 
-            icon={PenTool} 
-            label="التصميم والتسعير" 
-            active={activeTab === TABS.DESIGN} 
-            onClick={() => setActiveTab(TABS.DESIGN)} 
-          />
-          <NavItem 
-            icon={Hammer} 
-            label="مرحلة التركيب" 
-            active={activeTab === TABS.INSTALLATION} 
-            onClick={() => setActiveTab(TABS.INSTALLATION)} 
-          />
-          
-          <div className="my-2 border-t border-blue-800/50"></div>
-          <NavItem icon={FileText} label="العروض" />
-          <NavItem icon={LayoutDashboard} label="التقارير" />
-          <NavItem icon={Users} label="الموارد البشرية" />
+            <div class="my-2 border-t border-blue-800/50"></div>
+            
+            <button class="w-full flex items-center gap-3 px-4 py-3 my-1 rounded-r-lg transition-all duration-200 inactive-nav-item">
+                <i data-lucide="file-text" class="w-4 h-4 opacity-70"></i>
+                <span class="font-medium text-sm tracking-wide">العروض</span>
+            </button>
+            <button class="w-full flex items-center gap-3 px-4 py-3 my-1 rounded-r-lg transition-all duration-200 inactive-nav-item">
+                <i data-lucide="layout-dashboard" class="w-4 h-4 opacity-70"></i>
+                <span class="font-medium text-sm tracking-wide">التقارير</span>
+            </button>
         </nav>
 
-        <div className="p-4 bg-[#0a2342] mt-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold border-2 border-white/20">
-              خ
+        <div class="p-4 bg-[#0a2342] mt-auto">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold border-2 border-white/20">
+                    خ
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate">خالد رمزي</p>
+                    <p class="text-xs text-blue-300 truncate">مهندس تصميم</p>
+                </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">خالد رمزي</p>
-              <p className="text-xs text-blue-300 truncate">مهندس تصميم</p>
-            </div>
-          </div>
         </div>
-      </aside>
+    </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Header */}
-        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10 sticky top-0">
-          <div className="flex items-center gap-4 flex-1">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden text-gray-600"><Menu /></button>
-            <div className="relative w-full max-w-md hidden md:block">
-              <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-300" />
-              <input 
-                type="text" 
-                placeholder="بحث سريع (الاسم، الهاتف، الكود)..." 
-                className="w-full pr-10 pl-4 py-2 bg-gray-50 border border-transparent focus:bg-white focus:border-blue-500 rounded-full text-sm transition-all outline-none"
-              />
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-10 hidden md:hidden"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden relative w-full">
+        <!-- Header -->
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10 sticky top-0">
+            <div class="flex items-center gap-4 flex-1">
+                <button onclick="toggleSidebar()" class="md:hidden text-gray-600 p-1 rounded hover:bg-gray-100">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="relative w-full max-w-md hidden md:block">
+                    <i data-lucide="search" class="absolute right-3 top-2.5 h-5 w-5 text-gray-300"></i>
+                    <input type="text" placeholder="بحث سريع (الاسم، الهاتف، الكود)..." 
+                        class="w-full pr-10 pl-4 py-2 bg-gray-50 border border-transparent focus:bg-white focus:border-blue-500 rounded-full text-sm transition-all outline-none">
+                </div>
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button className="hidden md:flex text-xs px-3 py-1.5 h-8 bg-blue-500 hover:bg-blue-600" icon={Plus}>جديد</Button>
-            <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-            </button>
-          </div>
+            <div class="flex items-center gap-4">
+                <button onclick="resetData()" class="text-red-500 text-xs hover:underline hidden md:block">إعادة تعيين البيانات</button>
+                <button class="hidden md:flex items-center gap-2 text-xs px-3 py-1.5 h-8 bg-[#0f3057] text-white rounded-lg hover:bg-[#1a4b82] transition shadow-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i> جديد
+                </button>
+                <button class="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span class="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                </button>
+            </div>
         </header>
 
-        {/* Content Scrollable Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-7xl mx-auto">
-            {activeTab === TABS.REGISTRATION && <RegistrationView />}
-            {activeTab === TABS.MEASUREMENTS && <MeasurementsView />}
-            {activeTab === TABS.DESIGN && <DesignView />}
-            {activeTab === TABS.INSTALLATION && <InstallationView />}
-          </div>
+        <!-- Dynamic Content Area -->
+        <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8 animate-fadeIn">
+            <!-- Content will be injected via JS -->
         </div>
-      </main>
-    </div>
-  );
-}
+    </main>
 
-// --- Sub Components ---
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- Data & Constants ---
+        const INITIAL_CLIENTS = [
+            { 
+                id: 1, code: 'BK-5464', name: 'أحمد محمد', phone: '0501234567', 
+                email: 'ahmed@email.com', address: 'الرياض - حي العليا', 
+                source: 'social', status: 'potential', budget: 25000, taxNo: '300012345600003',
+                projectDetails: { kitchen: 1, bedroom: 2, cladding: 0, doors: 5, vanity: 2, tvUnit: 1 },
+                notes: 'يفضل الألوان الفاتحة',
+                measurements: { status: 'pending', date: '2025-02-20' },
+                design: { status: 'pending', total: 0, firstPayment: 0 },
+                installation: { status: 'pending', jobNo: 'J-0123', startDate: '', endDate: '' }
+            },
+            { 
+                id: 2, code: 'LD-9383', name: 'سارة علي', phone: '0559876543', 
+                email: 'sara@email.com', address: 'جدة - الروضة', 
+                source: 'referral', status: 'design', budget: 45000, taxNo: '',
+                projectDetails: { kitchen: 1, bedroom: 3, cladding: 10, doors: 0, vanity: 3, tvUnit: 1 },
+                notes: '',
+                measurements: { status: 'completed', date: '2025-02-15' },
+                design: { status: 'waiting_approval', total: 55000, firstPayment: 20000 },
+                installation: { status: 'pending', jobNo: 'J-0124', startDate: '', endDate: '' }
+            }
+        ];
 
-const Button = ({ children, onClick, variant = 'primary', className = "", icon: Icon }) => {
-  const baseStyle = "inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all focus:outline-none shadow-sm active:scale-95";
-  const variants = {
-    primary: "bg-[#0f3057] text-white hover:bg-[#1a4b82] hover:shadow-md",
-    secondary: "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300",
-    danger: "bg-red-600 text-white hover:bg-red-700",
-  };
+        const STATUS_OPTIONS = [
+            { id: 'new', label: 'عميل جديد', color: 'bg-blue-100 text-blue-800' },
+            { id: 'potential', label: 'محتمل', color: 'bg-yellow-100 text-yellow-800' },
+            { id: 'measurements', label: 'جاري القياس', color: 'bg-purple-100 text-purple-800' },
+            { id: 'design', label: 'مرحلة التصميم', color: 'bg-indigo-100 text-indigo-800' },
+            { id: 'installation', label: 'مرحلة التركيب', color: 'bg-orange-100 text-orange-800' },
+            { id: 'completed', label: 'مكتمل', color: 'bg-green-100 text-green-800' },
+        ];
 
-  return (
-    <button onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`}>
-      {Icon && <Icon className="w-4 h-4 ml-2" />}
-      {children}
-    </button>
-  );
-};
+        // --- State Management ---
+        let clients = [];
+        let activeTab = 'registration';
+        
+        // Form States
+        let newClientForm = {
+            code: generateCode(),
+            name: '', phone: '', address: '',
+            projectDetails: { kitchen: 0, bedroom: 0, cladding: 0, doors: 0, vanity: 0, tvUnit: 0 }
+        };
 
-const NavItem = ({ icon: Icon, label, active, onClick }) => (
-  <button 
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-3 my-1 rounded-r-lg transition-all duration-200 border-r-4 ${active ? 'bg-[#1a4b82] text-white border-[#e5b57f]' : 'text-blue-100 hover:bg-[#0a2342] hover:text-white border-transparent'}`}
-  >
-    <Icon size={18} className={active ? 'text-[#e5b57f]' : 'opacity-70'} />
-    <span className="font-medium text-sm tracking-wide">{label}</span>
-  </button>
-);
+        // --- Initialization ---
+        function init() {
+            loadClients();
+            render();
+        }
 
-const FilterIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-  </svg>
-);
+        function loadClients() {
+            const saved = localStorage.getItem('crm_clients_data');
+            if (saved) {
+                try {
+                    clients = JSON.parse(saved);
+                } catch (e) {
+                    clients = INITIAL_CLIENTS;
+                }
+            } else {
+                clients = INITIAL_CLIENTS;
+            }
+        }
+
+        function saveClients() {
+            localStorage.setItem('crm_clients_data', JSON.stringify(clients));
+            render(); // Re-render to update tables/stats
+        }
+
+        function generateCode() {
+            return 'BK-' + Math.floor(1000 + Math.random() * 9000);
+        }
+
+        function resetData() {
+            if(confirm('هل أنت متأكد من حذف جميع البيانات واستعادة الافتراضية؟')) {
+                clients = INITIAL_CLIENTS;
+                saveClients();
+                location.reload();
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                // Open
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                // Close
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function switchTab(tabName) {
+            activeTab = tabName;
+            
+            // Update Sidebar UI
+            document.querySelectorAll('nav button[id^="nav-"]').forEach(btn => {
+                btn.classList.remove('active-nav-item');
+                btn.classList.add('inactive-nav-item');
+                // fix icon colors manually since classes changed
+                const icon = btn.querySelector('i');
+                if(icon) icon.classList.add('opacity-70');
+            });
+
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('inactive-nav-item');
+                activeBtn.classList.add('active-nav-item');
+                activeBtn.querySelector('i').classList.remove('opacity-70');
+            }
+
+            // Close sidebar on mobile after selection
+            if(window.innerWidth < 768) {
+                const sidebar = document.getElementById('sidebar');
+                if (!sidebar.classList.contains('-translate-x-full')) toggleSidebar();
+            }
+
+            render();
+        }
+
+        // --- Render Views ---
+
+        function render() {
+            const container = document.getElementById('content-area');
+            container.innerHTML = ''; // Clear content
+
+            if (activeTab === 'registration') container.innerHTML = renderRegistrationView();
+            else if (activeTab === 'measurements') container.innerHTML = renderMeasurementsView();
+            else if (activeTab === 'design') container.innerHTML = renderDesignView();
+            else if (activeTab === 'installation') container.innerHTML = renderInstallationView();
+
+            lucide.createIcons(); // Refresh icons
+            
+            // Re-attach listeners for inputs since innerHTML wiped them
+            attachEventListeners();
+        }
+
+        // 1. Registration View
+        function renderRegistrationView() {
+            return `
+                <div class="space-y-6">
+                    <!-- Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        ${renderStatCard('إجمالي العملاء', clients.length, 'users', 'text-blue-600 bg-blue-100')}
+                        ${renderStatCard('مشاريع نشطة', '5', 'briefcase', 'text-yellow-600 bg-yellow-100')}
+                        ${renderStatCard('مشاريع مكتملة', '12', 'check-circle', 'text-green-600 bg-green-100')}
+                        ${renderStatCard('عملاء محتملون', '3', 'user-check', 'text-red-600 bg-red-100')}
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex items-center gap-2 text-gray-500">
+                            <i data-lucide="filter" class="w-5 h-5"></i>
+                            <span class="font-medium">تصفية القائمة:</span>
+                        </div>
+                        <div class="flex gap-4 flex-1 max-w-2xl">
+                            <select class="flex-1 bg-gray-50 border-gray-200 rounded-lg text-sm p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                <option>جميع الحالات</option>
+                                ${STATUS_OPTIONS.map(s => `<option value="${s.id}">${s.label}</option>`).join('')}
+                            </select>
+                            <select class="flex-1 bg-gray-50 border-gray-200 rounded-lg text-sm p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                <option>جميع المصادر</option>
+                                <option>معرض</option>
+                                <option>سوشيال ميديا</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Add Form -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-t-4 border-t-blue-500">
+                        <div class="mb-6 border-b border-gray-100 pb-4">
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <span class="w-1 h-6 bg-blue-600 rounded-full inline-block"></span>
+                                بيانات العميل الجديد
+                            </h2>
+                            <p class="text-sm text-gray-500 mt-1 mr-3">أدخل المعلومات الأساسية وتفاصيل المشروع</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-gray-700">كود العميل</label>
+                                <input type="text" value="${newClientForm.code}" readonly class="w-full bg-gray-100 border-gray-200 rounded-lg p-2.5 text-gray-500 text-center font-mono">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-gray-700">الاسم الكامل <span class="text-red-500">*</span></label>
+                                <input type="text" id="input-name" value="${newClientForm.name}" class="w-full border-gray-200 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-gray-700">رقم الجوال <span class="text-red-500">*</span></label>
+                                <input type="text" id="input-phone" value="${newClientForm.phone}" placeholder="05xxxxxxxx" class="w-full border-gray-200 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-left dir-ltr">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-gray-700">العنوان</label>
+                                <input type="text" id="input-address" value="${newClientForm.address}" class="w-full border-gray-200 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50/50 p-4 rounded-xl border border-dashed border-gray-200 mb-6">
+                            <label class="text-xs font-bold text-blue-600 mb-3 block">تفاصيل المشاريع المطلوبة:</label>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                                ${renderCounter('مطبخ', 'kitchen')}
+                                ${renderCounter('نوم', 'bedroom')}
+                                ${renderCounter('تجليد', 'cladding')}
+                                ${renderCounter('وحدة TV', 'tvUnit')}
+                                ${renderCounter('أبواب', 'doors')}
+                                ${renderCounter('مغاسل', 'vanity')}
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button onclick="handleSaveClient()" class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-medium bg-[#0f3057] text-white hover:bg-[#1a4b82] hover:shadow-md transition">
+                                <i data-lucide="save" class="w-4 h-4 ml-2"></i> حفظ البيانات
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h3 class="font-bold text-gray-700">سجل العملاء</h3>
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${clients.length} عميل</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right text-sm">
+                                <thead class="bg-white text-gray-500 border-b border-gray-100">
+                                    <tr>
+                                        <th class="py-3 px-4 font-medium">الكود</th>
+                                        <th class="py-3 px-4 font-medium">بيانات العميل</th>
+                                        <th class="py-3 px-4 font-medium">المشاريع</th>
+                                        <th class="py-3 px-4 font-medium">المصدر</th>
+                                        <th class="py-3 px-4 font-medium">الحالة</th>
+                                        <th class="py-3 px-4 font-medium text-center">إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    ${clients.map(client => `
+                                        <tr class="hover:bg-blue-50/20 transition-colors">
+                                            <td class="py-3 px-4 font-mono text-blue-600 font-semibold">${client.code}</td>
+                                            <td class="py-3 px-4">
+                                                <p class="font-bold text-gray-800">${client.name}</p>
+                                                <p class="text-xs text-gray-500">${client.phone}</p>
+                                            </td>
+                                            <td class="py-3 px-4">
+                                                <div class="flex gap-1 flex-wrap">
+                                                    ${Object.entries(client.projectDetails).map(([k, v]) => v > 0 ? 
+                                                        `<span class="text-[10px] bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded">${k === 'kitchen' ? 'مطبخ' : k === 'bedroom' ? 'غرفة' : k} (${v})</span>` 
+                                                        : '').join('')}
+                                                </div>
+                                            </td>
+                                            <td class="py-3 px-4 text-gray-600">${client.source === 'social' ? 'سوشيال' : 'إحالة'}</td>
+                                            <td class="py-3 px-4">
+                                                <span class="px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(client.status)}">
+                                                    ${getStatusLabel(client.status)}
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-4 flex justify-center gap-2">
+                                                <button class="p-1 text-blue-600 hover:bg-blue-50 rounded"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                                <button onclick="handleDeleteClient(${client.id})" class="p-1 text-red-600 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 2. Measurements View
+        function renderMeasurementsView() {
+            return `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${renderStatCard('إجمالي الملفات', '156', 'file-text', 'text-indigo-600 bg-indigo-100')}
+                        ${renderStatCard('ملفات هذا الشهر', '24', 'calendar', 'text-purple-600 bg-purple-100')}
+                        ${renderStatCard('صور وفيديوهات', '890', 'image', 'text-pink-600 bg-pink-100')}
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-t-4 border-t-indigo-500">
+                        <div class="mb-6 border-b border-gray-100 pb-4">
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <span class="w-1 h-6 bg-blue-600 rounded-full inline-block"></span>
+                                تفاصيل المشروع والمقاسات
+                            </h2>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-gray-700">اسم العميل</label>
+                                <select class="w-full border-gray-200 rounded-lg p-2.5 bg-white focus:ring-indigo-500 outline-none">
+                                    <option value="">اختر عميل...</option>
+                                    ${clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <!-- More read-only fields -->
+                        </div>
+
+                        <div class="space-y-4 mb-6">
+                            <label class="text-sm font-bold text-gray-700 block">ملفات الميديا (فيديو / كروكي / صور):</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                ${renderUploadZone('video', 'رفع فيديو للموقع', 'MP4, MOV up to 50MB', 'bg-blue-50 border-blue-200 text-blue-500')}
+                                ${renderUploadZone('pen-tool', 'رفع كروكي القياسات', 'PDF, PNG, JPG', 'bg-purple-50 border-purple-200 text-purple-500')}
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700">
+                                <i data-lucide="save" class="w-4 h-4 ml-2"></i> حفظ الملفات
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 3. Design View (Placeholder)
+        function renderDesignView() {
+            return `
+                <div class="h-full flex flex-col justify-center items-center text-center text-gray-400 space-y-4">
+                    <div class="p-6 bg-gray-100 rounded-full">
+                        <i data-lucide="pen-tool" class="w-12 h-12 opacity-50"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-600">التصميم والتسعير</h3>
+                        <p class="text-sm">هذه الصفحة قيد التطوير في النسخة التجريبية HTML</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 4. Installation View (Placeholder)
+        function renderInstallationView() {
+            return `
+                 <div class="h-full flex flex-col justify-center items-center text-center text-gray-400 space-y-4">
+                    <div class="p-6 bg-gray-100 rounded-full">
+                        <i data-lucide="hammer" class="w-12 h-12 opacity-50"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-600">مرحلة التركيب</h3>
+                        <p class="text-sm">هذه الصفحة قيد التطوير في النسخة التجريبية HTML</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Helper Renderers ---
+
+        function renderStatCard(title, value, icon, colorClass) {
+            // colorClass e.g. "text-blue-600 bg-blue-100"
+            const [textCol, bgCol] = colorClass.split(' ');
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start z-10">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium mb-1">${title}</p>
+                            <h3 class="text-3xl font-bold text-gray-800">${value}</h3>
+                        </div>
+                        <div class="p-2 rounded-lg ${bgCol} bg-opacity-10">
+                            <i data-lucide="${icon}" class="${textCol.replace('bg-', 'text-')} w-6 h-6"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCounter(label, key) {
+            return `
+                <div class="flex items-center justify-between bg-gray-50 p-2 rounded-lg border border-gray-200">
+                    <span class="text-sm font-medium text-gray-600 px-2">${label}</span>
+                    <div class="flex items-center bg-white rounded shadow-sm">
+                        <button onclick="updateCounter('${key}', -1)" class="px-2 py-1 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-r">-</button>
+                        <span id="count-${key}" class="w-8 text-center text-sm font-bold border-x border-gray-100 py-1">${newClientForm.projectDetails[key]}</span>
+                        <button onclick="updateCounter('${key}', 1)" class="px-2 py-1 text-gray-500 hover:text-green-500 hover:bg-green-50 rounded-l">+</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderUploadZone(icon, label, subLabel, colorClass) {
+            const [bg, border, text] = colorClass.split(' ');
+            return `
+                <div class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors hover:bg-opacity-70 ${colorClass}">
+                    <div class="flex justify-center mb-3">
+                        <div class="p-3 bg-white rounded-full shadow-sm">
+                            <i data-lucide="${icon}" class="${text} w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <h4 class="font-semibold text-gray-700">${label}</h4>
+                    <p class="text-xs text-gray-500 mt-1">${subLabel}</p>
+                </div>
+            `;
+        }
+
+        function getStatusLabel(status) {
+            const opt = STATUS_OPTIONS.find(s => s.id === status);
+            return opt ? opt.label : status;
+        }
+
+        function getStatusColor(status) {
+            const opt = STATUS_OPTIONS.find(s => s.id === status);
+            return opt ? opt.color : 'bg-gray-100 text-gray-800';
+        }
+
+        // --- Event Handlers & Logic ---
+
+        function attachEventListeners() {
+            // Re-bind inputs to state (simplistic approach for Vanilla JS)
+            const nameInput = document.getElementById('input-name');
+            if (nameInput) nameInput.addEventListener('input', e => newClientForm.name = e.target.value);
+            
+            const phoneInput = document.getElementById('input-phone');
+            if (phoneInput) phoneInput.addEventListener('input', e => newClientForm.phone = e.target.value);
+
+            const addressInput = document.getElementById('input-address');
+            if (addressInput) addressInput.addEventListener('input', e => newClientForm.address = e.target.value);
+        }
+
+        function updateCounter(key, change) {
+            const newVal = Math.max(0, newClientForm.projectDetails[key] + change);
+            newClientForm.projectDetails[key] = newVal;
+            // Update UI directly for speed
+            const span = document.getElementById(`count-${key}`);
+            if(span) span.innerText = newVal;
+        }
+
+        function handleSaveClient() {
+            if (!newClientForm.name || !newClientForm.phone) {
+                alert('الرجاء إدخال الاسم ورقم الجوال');
+                return;
+            }
+
+            const client = {
+                ...newClientForm,
+                id: Date.now(),
+                status: 'new',
+                source: 'معرض', // default
+                date: new Date().toLocaleDateString('en-US')
+            };
+
+            clients.unshift(client); // Add to top
+            saveClients();
+            
+            // Reset Form
+            newClientForm = {
+                code: generateCode(),
+                name: '', phone: '', address: '',
+                projectDetails: { kitchen: 0, bedroom: 0, cladding: 0, doors: 0, vanity: 0, tvUnit: 0 }
+            };
+            
+            alert('تم حفظ العميل بنجاح!');
+        }
+
+        function handleDeleteClient(id) {
+            if (confirm('حذف هذا العميل؟')) {
+                clients = clients.filter(c => c.id !== id);
+                saveClients();
+            }
+        }
+
+        // Start App
+        init();
+    </script>
+</body>
+</html>
