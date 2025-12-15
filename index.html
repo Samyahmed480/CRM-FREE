@@ -1003,9 +1003,14 @@
                                         `).join('')}
                                         <tr class="bg-slate-50 dark:bg-slate-900">
                                             <td colspan="6" class="p-2 text-center">
-                                                <button onclick="addPricingItem()" class="text-blue-600 hover:text-blue-700 font-bold text-sm flex items-center justify-center gap-2 w-full py-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded transition-colors">
-                                                    <i data-lucide="plus-circle" class="w-4 h-4"></i> إضافة بند جديد
-                                                </button>
+                                                <div class="flex justify-center gap-4">
+                                                    <button onclick="addPricingItem()" class="text-blue-600 hover:text-blue-700 font-bold text-sm flex items-center gap-2 py-2 px-4 hover:bg-blue-50 dark:hover:bg-slate-800 rounded transition-colors">
+                                                        <i data-lucide="plus-circle" class="w-4 h-4"></i> إضافة بند جديد
+                                                    </button>
+                                                    <button onclick="resetPricingItems()" class="text-orange-500 hover:text-orange-600 font-bold text-sm flex items-center gap-2 py-2 px-4 hover:bg-orange-50 dark:hover:bg-slate-800 rounded transition-colors" title="استرجاع البنود الأصلية من المشروع">
+                                                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> إعادة تعيين
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -1515,7 +1520,36 @@
 
         function selectClientForMeasure(id) { selectedClientId = id; render(); }
         function selectClientForDesign(id) { selectedClientForDesignId = id; render(); }
-        function selectClientForPricing(id) { selectedClientForPricingId = id; render(); }
+        function selectClientForPricing(id) { 
+            selectedClientForPricingId = id; 
+            const client = clients.find(c => c.id == id);
+            
+            // استيراد البنود تلقائياً من تفاصيل المشروع إذا كانت القائمة فارغة
+            if (client && (!client.quotationItems || client.quotationItems.length === 0)) {
+                const items = [];
+                const map = { kitchen: 'مطبخ', bedroom: 'غرفة نوم', cladding: 'تجليد', doors: 'أبواب', vanity: 'خزائن', tvUnit: 'وحدة TV' };
+                
+                if (client.projectDetails) {
+                    Object.entries(client.projectDetails).forEach(([key, count]) => {
+                        if (count > 0) {
+                            items.push({ name: map[key] || key, qty: parseInt(count), price: 0 });
+                        }
+                    });
+                }
+                
+                if (client.customProjects) {
+                    client.customProjects.forEach(p => {
+                        items.push({ name: p.name, qty: parseInt(p.qty), price: 0 });
+                    });
+                }
+                
+                if (items.length > 0) {
+                    client.quotationItems = items;
+                    saveClients();
+                }
+            }
+            render(); 
+        }
         function selectClientForInstall(id) { selectedClientForInstallId = id; render(); }
 
         function saveAppointment() {
@@ -1632,6 +1666,35 @@
             const client = clients.find(c => c.id == selectedClientForPricingId);
             if(!client.quotationItems) client.quotationItems = [];
             client.quotationItems.push({ name: '', qty: 1, price: 0 });
+            render();
+        }
+
+        function resetPricingItems() {
+            if(!selectedClientForPricingId) return;
+            if(!confirm('هل أنت متأكد من إعادة تعيين البنود؟ سيتم حذف التعديلات الحالية واسترجاع البنود من تفاصيل المشروع.')) return;
+            
+            const client = clients.find(c => c.id == selectedClientForPricingId);
+            if(!client) return;
+
+            const items = [];
+            const map = { kitchen: 'مطبخ', bedroom: 'غرفة نوم', cladding: 'تجليد', doors: 'أبواب', vanity: 'خزائن', tvUnit: 'وحدة TV' };
+            
+            if (client.projectDetails) {
+                Object.entries(client.projectDetails).forEach(([key, count]) => {
+                    if (count > 0) {
+                        items.push({ name: map[key] || key, qty: parseInt(count), price: 0 });
+                    }
+                });
+            }
+            
+            if (client.customProjects) {
+                client.customProjects.forEach(p => {
+                    items.push({ name: p.name, qty: parseInt(p.qty), price: 0 });
+                });
+            }
+            
+            client.quotationItems = items;
+            saveClients();
             render();
         }
 
