@@ -7,6 +7,11 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     
     <!-- Google Fonts (Cairo) -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,12 +19,19 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         body {
             font-family: 'Cairo', sans-serif;
             background-color: #f8f9fc; /* Light background typical of modern dashboards */
         }
         
+        .dark body {
+            background-color: #0f172a;
+        }
+
         /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar {
             width: 5px;
@@ -47,12 +59,26 @@
             border-color: #3b82f6; /* blue-500 */
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
+        
+        /* Dark Mode for Inputs */
+        .dark .form-input {
+            background-color: #1e293b;
+            border-color: #334155;
+            color: #f1f5f9;
+        }
+        .dark .form-input:focus {
+            border-color: #60a5fa;
+        }
+
         .form-label {
             display: block;
             font-size: 0.75rem;
             font-weight: 700;
             color: #4b5563; /* gray-600 */
             margin-bottom: 0.25rem;
+        }
+        .dark .form-label {
+            color: #94a3b8;
         }
 
         /* Upload Zone Style */
@@ -65,6 +91,14 @@
         .upload-zone:hover {
             border-color: #3b82f6;
             background-color: #eff6ff;
+        }
+        .dark .upload-zone {
+            background-color: #1e293b;
+            border-color: #334155;
+        }
+        .dark .upload-zone:hover {
+            background-color: #334155;
+            border-color: #60a5fa;
         }
 
         /* Animations */
@@ -104,21 +138,21 @@
         }
     </style>
 </head>
-<body class="text-slate-800 h-screen flex overflow-hidden">
+<body class="text-slate-800 h-screen flex overflow-hidden dark:text-slate-100">
 
     <!-- Sidebar -->
     <aside id="sidebar" class="bg-[#0f3057] text-white w-64 flex-shrink-0 flex flex-col transition-all duration-300 shadow-2xl z-20 h-full md:relative absolute transform -translate-x-full md:translate-x-0">
         <div class="p-6 flex flex-col items-center border-b border-blue-900/50">
             <!-- Logo -->
-            <div class="w-20 h-20 mb-3 bg-[#fdf6e7] rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden transform rotate-3 hover:rotate-0 transition-transform duration-300">
+            <div id="company-logo-container" class="w-20 h-20 mb-3 bg-[#fdf6e7] rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden transform rotate-3 hover:rotate-0 transition-transform duration-300">
                 <svg viewBox="0 0 100 100" class="w-full h-full p-1">
                     <path d="M 10,50 A 40,40 0 1,1 90,50" fill="none" stroke="#0f3057" stroke-width="8" stroke-linecap="round" />
                     <path d="M 90,50 A 40,40 0 1,1 10,50" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" />
                     <text x="50" y="72" font-family="Arial, sans-serif" font-weight="800" font-size="60" text-anchor="middle" fill="#0f3057">1</text>
                 </svg>
             </div>
-            <h1 class="text-lg font-bold tracking-wider text-center font-sans">IN ONE OPERATION</h1>
-            <p class="text-[10px] text-blue-200 mt-1 uppercase tracking-widest opacity-80">System Management</p>
+            <h1 id="company-name-display" class="text-lg font-bold tracking-wider text-center font-sans">IN ONE OPERATION</h1>
+            <p id="company-subtitle-display" class="text-[10px] text-blue-200 mt-1 uppercase tracking-widest opacity-80">System Management</p>
         </div>
 
         <nav class="flex-1 px-3 space-y-1.5 mt-6 overflow-y-auto custom-scrollbar">
@@ -150,6 +184,10 @@
                 <i data-lucide="layout-dashboard" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
                 <span class="font-medium text-sm">التقارير</span>
             </button>
+            <button onclick="switchTab('settings')" id="nav-settings" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
+                <i data-lucide="settings" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                <span class="font-medium text-sm">الإعدادات</span>
+            </button>
         </nav>
 
         <!-- User Profile -->
@@ -174,23 +212,28 @@
     <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-10 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col overflow-hidden relative w-full bg-[#f8f9fc]">
+    <main class="flex-1 flex flex-col overflow-hidden relative w-full bg-[#f8f9fc] dark:bg-slate-900 transition-colors">
         <!-- Header -->
-        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10 sticky top-0 border-b border-slate-100">
+        <header class="bg-white dark:bg-slate-800 shadow-sm h-16 flex items-center justify-between px-6 z-10 sticky top-0 border-b border-slate-100 dark:border-slate-700 transition-colors">
             <div class="flex items-center gap-4 flex-1">
-                <button onclick="toggleSidebar()" class="md:hidden text-slate-500 p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-500 dark:text-slate-400 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
                 <div class="relative w-full max-w-lg hidden md:block group">
                     <i data-lucide="search" class="absolute right-3 top-2.5 h-5 w-5 text-slate-300 group-focus-within:text-blue-500 transition-colors"></i>
                     <input type="text" id="global-search" oninput="handleSearch(this.value)" placeholder="ابحث باسم العميل، رقم الهاتف، أو الكود..." 
-                        class="w-full pr-10 pl-4 py-2 bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-full text-sm transition-all outline-none text-slate-600 placeholder-slate-400">
+                        class="w-full pr-10 pl-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-full text-sm transition-all outline-none text-slate-600 dark:text-slate-200 placeholder-slate-400">
                 </div>
             </div>
             <div class="flex items-center gap-3">
+                <button onclick="toggleDarkMode()" class="relative p-2.5 text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700 hover:text-blue-600 rounded-full transition-all" title="الوضع الليلي">
+                    <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+                    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                </button>
+
                 <button onclick="resetData()" class="text-red-500 text-xs hover:bg-red-50 px-3 py-1.5 rounded-full transition-colors hidden md:block font-medium">إعادة تعيين</button>
                 
-                <button class="relative p-2.5 text-slate-500 hover:bg-slate-50 hover:text-blue-600 rounded-full transition-all">
+                <button class="relative p-2.5 text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700 hover:text-blue-600 rounded-full transition-all">
                     <i data-lucide="bell" class="w-5 h-5"></i>
                     <span class="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
                 </button>
@@ -219,6 +262,16 @@
             { id: 1, name: 'خالد رمزي', role: 'admin' },
             { id: 2, name: 'أحمد مندوب', role: 'sales' }
         ];
+
+        let companySettings = {
+            name: 'IN ONE OPERATION',
+            subtitle: 'System Management',
+            address: 'المملكة العربية السعودية - الرياض',
+            phone: '920000000',
+            email: 'info@inone.sa',
+            taxId: '300000000000003',
+            logo: '' 
+        };
 
         let currentUser = EMPLOYEES[0]; // Start as Admin
 
@@ -287,6 +340,8 @@
         // --- Initialization ---
         function init() {
             loadClients();
+            loadSettings();
+            initDarkMode();
             render();
             lucide.createIcons();
         }
@@ -299,6 +354,38 @@
         function saveClients() {
             localStorage.setItem('crm_clients_data', JSON.stringify(clients));
             render();
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('crm_settings');
+            if(saved) companySettings = JSON.parse(saved);
+            updateSidebarInfo();
+        }
+
+        function saveSettingsData() {
+            localStorage.setItem('crm_settings', JSON.stringify(companySettings));
+            updateSidebarInfo();
+            alert('تم حفظ الإعدادات بنجاح');
+        }
+
+        function updateSidebarInfo() {
+            document.getElementById('company-name-display').textContent = companySettings.name;
+            document.getElementById('company-subtitle-display').textContent = companySettings.subtitle;
+            const logoContainer = document.getElementById('company-logo-container');
+            if(companySettings.logo) logoContainer.innerHTML = `<img src="${companySettings.logo}" class="w-full h-full object-cover">`;
+        }
+
+        function initDarkMode() {
+            if (localStorage.getItem('crm_dark_mode') === 'true' || (!('crm_dark_mode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('crm_dark_mode', isDark);
         }
 
         function generateCode() { return 'BK-' + Math.floor(1000 + Math.random() * 9000); }
@@ -400,11 +487,17 @@
                 html = renderOffersView(visibleClients);
             } else if (activeTab === 'reports') {
                 html = renderReportsView(clients);
+            } else if (activeTab === 'settings') {
+                html = renderSettingsView();
             }
 
             container.innerHTML = html;
             lucide.createIcons();
             attachInputListeners();
+
+            if (activeTab === 'reports') {
+                initReportsCharts();
+            }
         }
 
         // 1. Registration View
@@ -420,10 +513,10 @@
                     </div>
 
                     <!-- Add Client Form Card -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 relative overflow-hidden">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 relative overflow-hidden transition-colors">
                         <div class="absolute top-0 right-0 w-2 h-full bg-blue-600"></div>
-                        <div class="mb-6 flex justify-between items-center border-b border-slate-100 pb-4">
-                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <div class="mb-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-4">
+                            <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                 <i data-lucide="user-plus" class="text-blue-600 w-6 h-6"></i>
                                 بيانات العميل الجديد
                             </h2>
@@ -445,7 +538,7 @@
                             </div>
                             <div class="space-y-1">
                                 <label class="form-label">نوع العميل</label>
-                                <select id="in-type" class="form-input bg-white">
+                                <select id="in-type" class="form-input bg-white dark:bg-slate-700">
                                     <option ${newClientForm.type === 'أفراد' ? 'selected' : ''}>أفراد</option>
                                     <option ${newClientForm.type === 'شركات' ? 'selected' : ''}>شركات</option>
                                 </select>
@@ -456,7 +549,7 @@
                             </div>
                             <div class="space-y-1">
                                 <label class="form-label">المصدر</label>
-                                <select id="in-source" class="form-input bg-white">
+                                <select id="in-source" class="form-input bg-white dark:bg-slate-700">
                                     <option value="social" ${newClientForm.source === 'social' ? 'selected' : ''}>سوشيال ميديا</option>
                                     <option value="showroom" ${newClientForm.source === 'showroom' ? 'selected' : ''}>زيارة المعرض</option>
                                     <option value="website" ${newClientForm.source === 'website' ? 'selected' : ''}>موقع الكترونى</option>
@@ -469,7 +562,7 @@
                             </div>
                             <div class="space-y-1">
                                 <label class="form-label">حالة العميل</label>
-                                <select id="in-status" class="form-input bg-white">
+                                <select id="in-status" class="form-input bg-white dark:bg-slate-700">
                                     <option value="potential" ${newClientForm.clientStatus === 'potential' ? 'selected' : ''}>محتمل</option>
                                     <option value="interested" ${newClientForm.clientStatus === 'interested' ? 'selected' : ''}>مهتم</option>
                                     <option value="inquiry" ${newClientForm.clientStatus === 'inquiry' ? 'selected' : ''}>استفسار</option>
@@ -486,50 +579,48 @@
                         </div>
 
                         <!-- Project Details Counter -->
-                        <div class="bg-slate-50 p-5 rounded-xl border border-dashed border-slate-300 mb-6">
-                            <label class="text-sm font-bold text-slate-600 mb-4 block flex items-center gap-2">
+                        <div class="bg-slate-50 dark:bg-slate-900 p-5 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 mb-6">
+                            <label class="text-sm font-bold text-slate-600 dark:text-slate-300 mb-4 block flex items-center gap-2">
                                 <i data-lucide="layers" class="w-4 h-4 text-blue-500"></i> تفاصيل المشروع المطلوبة:
                             </label>
-                            ${newClientForm.type === 'أفراد' ? `
-                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                                    ${renderCounter('مطبخ', 'kitchen')}
-                                    ${renderCounter('غرفة نوم', 'bedroom')}
-                                    ${renderCounter('تجليد', 'cladding')}
-                                    ${renderCounter('وحدة TV', 'tvUnit')}
-                                    ${renderCounter('أبواب', 'doors')}
-                                    ${renderCounter('خزائن', 'vanity')}
-                                </div>
-                            ` : `
-                                <div class="space-y-3">
-                                    <div class="flex gap-2 items-end">
-                                        <div class="flex-1">
-                                            <label class="text-xs text-slate-500 mb-1 block">اسم البند</label>
-                                            <input type="text" id="comp-item-name" class="form-input" placeholder="مثال: مكتبة، دولاب..">
-                                        </div>
-                                        <div class="w-24">
-                                            <label class="text-xs text-slate-500 mb-1 block">العدد</label>
-                                            <input type="number" id="comp-item-qty" class="form-input" placeholder="0">
-                                        </div>
-                                        <button onclick="addCompanyItem()" class="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition-colors h-[42px] w-[42px] flex items-center justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6 pb-6 border-b border-slate-200 dark:border-slate-700 border-dashed">
+                                ${renderCounter('مطبخ', 'kitchen')}
+                                ${renderCounter('غرفة نوم', 'bedroom')}
+                                ${renderCounter('تجليد', 'cladding')}
+                                ${renderCounter('وحدة TV', 'tvUnit')}
+                                ${renderCounter('أبواب', 'doors')}
+                                ${renderCounter('خزائن', 'vanity')}
+                            </div>
+                            <div class="space-y-3">
+                                <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block">بنود مخصصة (إضافة يدوية)</label>
+                                <div class="flex gap-2 items-end">
+                                    <div class="flex-1">
+                                        <label class="text-xs text-slate-500 mb-1 block">اسم البند</label>
+                                        <input type="text" id="comp-item-name" class="form-input" placeholder="مثال: مكتبة، دولاب..">
                                     </div>
-                                    <div class="space-y-2 mt-3">
-                                        ${newClientForm.customProjects.map((item, idx) => `
-                                            <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                                                <span class="font-medium text-slate-700">${item.name}</span>
-                                                <div class="flex items-center gap-4">
-                                                    <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">العدد: ${item.qty}</span>
-                                                    <button onclick="removeCompanyItem(${idx})" class="text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                                </div>
+                                    <div class="w-24">
+                                        <label class="text-xs text-slate-500 mb-1 block">العدد</label>
+                                        <input type="number" id="comp-item-qty" class="form-input" placeholder="0">
+                                    </div>
+                                    <button onclick="addCompanyItem()" class="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition-colors h-[42px] w-[42px] flex items-center justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                                </div>
+                                <div class="space-y-2 mt-3">
+                                    ${newClientForm.customProjects.map((item, idx) => `
+                                        <div class="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                                            <span class="font-medium text-slate-700 dark:text-slate-200">${item.name}</span>
+                                            <div class="flex items-center gap-4">
+                                                <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">العدد: ${item.qty}</span>
+                                                <button onclick="removeCompanyItem(${idx})" class="text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                             </div>
-                                        `).join('')}
-                                        ${newClientForm.customProjects.length === 0 ? '<p class="text-sm text-slate-400 text-center py-2 italic">لم يتم إضافة بنود بعد</p>' : ''}
-                                    </div>
+                                        </div>
+                                    `).join('')}
+                                    ${newClientForm.customProjects.length === 0 ? '<p class="text-sm text-slate-400 text-center py-2 italic">لم يتم إضافة بنود بعد</p>' : ''}
                                 </div>
-                            `}
+                            </div>
                         </div>
 
                         <!-- Measurement Request Section -->
-                        <div class="bg-blue-50/50 p-5 rounded-xl border border-blue-100 mb-6">
+                        <div class="bg-blue-50/50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 mb-6">
                             <label class="text-sm font-bold text-blue-800 mb-4 block flex items-center gap-2">
                                 <i data-lucide="calendar-clock" class="w-4 h-4 text-blue-600"></i> طلب رفع مقاسات (اختياري):
                             </label>
@@ -542,9 +633,9 @@
                                     <label class="text-xs font-bold text-slate-500">الوقت</label>
                                     <input type="time" id="in-measure-time" value="${newClientForm.measureRequest.time}" class="form-input">
                                 </div>
-                                <div class="flex items-center gap-2 h-[42px] bg-white px-3 rounded-lg border border-slate-200">
+                                <div class="flex items-center gap-2 h-[42px] bg-white dark:bg-slate-700 px-3 rounded-lg border border-slate-200 dark:border-slate-600">
                                     <input type="checkbox" id="in-measure-paid" onchange="togglePaidAmount()" ${newClientForm.measureRequest.isPaid ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded cursor-pointer">
-                                    <label for="in-measure-paid" class="text-sm text-slate-700 cursor-pointer select-none">مدفوع؟</label>
+                                    <label for="in-measure-paid" class="text-sm text-slate-700 dark:text-slate-200 cursor-pointer select-none">مدفوع؟</label>
                                 </div>
                                 <div id="measure-amount-div" class="space-y-1 ${newClientForm.measureRequest.isPaid ? '' : 'hidden'}">
                                     <label class="text-xs font-bold text-slate-500">المبلغ</label>
@@ -559,7 +650,7 @@
                             <textarea id="in-notes" class="form-input h-24 resize-none" placeholder="أي تفاصيل إضافية...">${newClientForm.notes}</textarea>
                         </div>
 
-                        <div class="flex flex-wrap gap-3 justify-end border-t border-slate-100 pt-4">
+                        <div class="flex flex-wrap gap-3 justify-end border-t border-slate-100 dark:border-slate-700 pt-4">
                             <button onclick="notifyClient()" class="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 flex items-center gap-2 shadow-lg shadow-green-900/20 transition-all active:scale-95 font-bold">
                                 <i data-lucide="message-circle" class="w-4 h-4"></i> إشعار العميل
                             </button>
@@ -573,16 +664,16 @@
                     </div>
 
                     <!-- Clients Table -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                        <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+                        <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                                 <i data-lucide="list" class="w-5 h-5 text-slate-400"></i> سجل العملاء
                             </h3>
                             <span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-bold">${data.length} عميل</span>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-right text-sm">
-                                <thead class="bg-slate-50 text-slate-500 font-medium">
+                                <thead class="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-300 font-medium">
                                     <tr>
                                         <th class="p-4">بيانات العميل</th>
                                         <th class="p-4">الجوال</th>
@@ -591,22 +682,25 @@
                                         <th class="p-4 text-center">إجراءات</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-slate-100">
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                                     ${data.map(c => `
-                                        <tr class="hover:bg-blue-50/30 transition-colors group">
+                                        <tr class="hover:bg-blue-50/30 dark:hover:bg-slate-700/50 transition-colors group">
                                             <td class="p-4">
-                                                <div class="font-bold text-[#0f3057] text-base">${c.name}</div>
+                                                <div class="font-bold text-[#0f3057] dark:text-blue-300 text-base">${c.name}</div>
                                                 <div class="text-xs text-slate-400 font-mono flex items-center gap-1">
-                                                    <span class="bg-slate-100 px-1 rounded">${c.code}</span>
+                                                    <span class="bg-slate-100 dark:bg-slate-700 px-1 rounded">${c.code}</span>
                                                     ${c.type === 'شركات' ? '<span class="bg-orange-100 text-orange-700 px-1 rounded">شركة</span>' : ''}
                                                 </div>
                                             </td>
-                                            <td class="p-4 font-mono dir-ltr text-right text-slate-600">${c.phone}</td>
+                                            <td class="p-4 font-mono dir-ltr text-right text-slate-600 dark:text-slate-300">${c.phone}</td>
                                             <td class="p-4">
                                                 <div class="flex gap-1 flex-wrap">
                                                     ${Object.entries(c.projectDetails).map(([k, v]) => v > 0 ? 
-                                                        `<span class="text-[10px] bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 shadow-sm">${k === 'kitchen' ? 'مطبخ' : k === 'bedroom' ? 'نوم' : k} <b class="text-blue-600">${v}</b></span>` 
+                                                        `<span class="text-[10px] bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300 shadow-sm">${k === 'kitchen' ? 'مطبخ' : k === 'bedroom' ? 'نوم' : k} <b class="text-blue-600 dark:text-blue-400">${v}</b></span>` 
                                                         : '').join('')}
+                                                    ${(c.customProjects || []).map(p => 
+                                                        `<span class="text-[10px] bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300 shadow-sm">${p.name} <b class="text-blue-600 dark:text-blue-400">${p.qty}</b></span>`
+                                                    ).join('')}
                                                 </div>
                                             </td>
                                             <td class="p-4">
@@ -643,9 +737,9 @@
             
             return `
                 <div class="space-y-6 max-w-5xl mx-auto">
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 border-t-4 border-t-indigo-500">
-                        <div class="mb-8 border-b border-slate-100 pb-4">
-                            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-8 border-t-4 border-t-indigo-500 transition-colors">
+                        <div class="mb-8 border-b border-slate-100 dark:border-slate-700 pb-4">
+                            <h2 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
                                 <span class="p-2 bg-indigo-100 rounded-lg text-indigo-600"><i data-lucide="ruler" class="w-6 h-6"></i></span>
                                 تفاصيل المشروع والمقاسات
                             </h2>
@@ -656,7 +750,7 @@
                             <div class="space-y-1">
                                 <label class="form-label">اسم العميل</label>
                                 <div class="relative">
-                                    <select onchange="selectClientForMeasure(this.value)" class="form-input appearance-none bg-white cursor-pointer">
+                                    <select onchange="selectClientForMeasure(this.value)" class="form-input appearance-none bg-white dark:bg-slate-700 cursor-pointer">
                                         <option value="">اختر عميل...</option>
                                         ${clients.map(c => `<option value="${c.id}" ${c.id == selectedClientId ? 'selected' : ''}>${c.name} (${c.code})</option>`).join('')}
                                     </select>
@@ -665,11 +759,11 @@
                             </div>
                              <div class="space-y-1">
                                 <label class="form-label">رقم الجوال</label>
-                                <input type="text" value="${selectedClient ? selectedClient.phone : ''}" readonly class="form-input bg-slate-50 text-slate-500">
+                                <input type="text" value="${selectedClient ? selectedClient.phone : ''}" readonly class="form-input bg-slate-50 dark:bg-slate-900 text-slate-500">
                             </div>
                              <div class="space-y-1">
                                 <label class="form-label">حالة المقاسات</label>
-                                <div class="form-input bg-slate-50 flex items-center justify-between">
+                                <div class="form-input bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
                                     <span class="${selectedClient && selectedClient.measurements.status === 'completed' ? 'text-green-600 font-bold' : 'text-slate-500'}">
                                         ${selectedClient ? (selectedClient.measurements.status === 'completed' ? 'مكتمل' : 'معلق') : '-'}
                                     </span>
@@ -679,7 +773,7 @@
                         </div>
 
                         <!-- 1. Appointment Section -->
-                        <div class="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-8 ${!selectedClient ? 'opacity-50 pointer-events-none' : ''}">
+                        <div class="bg-blue-50/50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-100 dark:border-blue-800 mb-8 ${!selectedClient ? 'opacity-50 pointer-events-none' : ''}">
                             <h4 class="text-sm font-bold text-blue-800 mb-4 flex items-center gap-2">
                                 <i data-lucide="calendar-clock" class="w-4 h-4"></i> تحديد موعد القياس
                             </h4>
@@ -707,28 +801,28 @@
                             
                             <div class="grid grid-cols-1 gap-4">
                                 ${selectedClient ? getMeasurementItems(selectedClient).map(item => `
-                                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 transition-colors">
-                                        <h5 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                    <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm hover:border-indigo-300 transition-colors">
+                                        <h5 class="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
                                             <span class="w-2 h-2 rounded-full bg-indigo-500"></span> ${item.label}
                                         </h5>
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div class="upload-zone bg-slate-50 border-slate-200 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all h-32">
+                                            <div class="upload-zone bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all h-32">
                                                 <i data-lucide="image" class="w-6 h-6 text-slate-400 mb-2"></i>
                                                 <span class="text-xs font-bold text-slate-600">صور/فيديو الموقع (قبل)</span>
                                                 <span class="text-[10px] text-slate-400 mt-1">JPG, MP4</span>
                                             </div>
-                                            <div class="upload-zone bg-slate-50 border-slate-200 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-all h-32">
+                                            <div class="upload-zone bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-all h-32">
                                                 <i data-lucide="pen-tool" class="w-6 h-6 text-slate-400 mb-2"></i>
                                                 <span class="text-xs font-bold text-slate-600">كروكي المقاسات</span>
                                                 <span class="text-[10px] text-slate-400 mt-1">PDF, PNG</span>
                                             </div>
                                         </div>
                                     </div>
-                                `).join('') : '<div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">اختر عميلاً لعرض البنود</div>'}
+                                `).join('') : '<div class="text-center py-8 text-slate-400 bg-slate-50 dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">اختر عميلاً لعرض البنود</div>'}
                             </div>
                         </div>
                         
-                        <div class="flex flex-wrap gap-3 justify-end pt-4 border-t border-slate-100 ${!selectedClient ? 'opacity-50 pointer-events-none' : ''}">
+                        <div class="flex flex-wrap gap-3 justify-end pt-4 border-t border-slate-100 dark:border-slate-700 ${!selectedClient ? 'opacity-50 pointer-events-none' : ''}">
                             <button onclick="notifyClientMeasurement()" class="bg-green-600 text-white px-5 py-2.5 rounded-lg hover:bg-green-700 shadow-lg shadow-green-900/20 flex items-center gap-2 font-bold transition-all active:scale-95">
                                 <i data-lucide="message-circle" class="w-4 h-4"></i> إشعار العميل
                             </button>
@@ -751,9 +845,9 @@
             return `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
                     <div class="lg:col-span-2 space-y-6">
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 border-t-4 border-t-purple-500 h-full overflow-y-auto custom-scrollbar">
-                            <div class="mb-6 border-b border-slate-100 pb-4">
-                                <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 border-t-4 border-t-purple-500 h-full overflow-y-auto custom-scrollbar transition-colors">
+                            <div class="mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
+                                <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                     <span class="p-2 bg-purple-100 rounded-lg text-purple-600"><i data-lucide="pen-tool" class="w-5 h-5"></i></span>
                                     التسعير والعقد
                                 </h2>
@@ -762,7 +856,7 @@
                             <div class="space-y-4 mb-6">
                                 <label class="form-label">اختيار العميل</label>
                                 <div class="relative">
-                                    <select onchange="selectClientForDesign(this.value)" class="form-input appearance-none bg-slate-50 cursor-pointer">
+                                    <select onchange="selectClientForDesign(this.value)" class="form-input appearance-none bg-slate-50 dark:bg-slate-700 cursor-pointer">
                                         <option value="">اختر عميل للتسعير...</option>
                                         ${clients.map(c => `<option value="${c.id}" ${c.id == selectedClientForDesignId ? 'selected' : ''}>${c.name} - ${getStatusLabel(c.status)}</option>`).join('')}
                                     </select>
@@ -771,30 +865,30 @@
                             </div>
 
                             <div class="space-y-6 ${!selectedClient ? 'opacity-50 pointer-events-none filter blur-sm transition-all' : 'transition-all'}">
-                                <div class="bg-purple-50 p-6 rounded-xl border border-purple-100">
+                                <div class="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-xl border border-purple-100 dark:border-purple-800">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div class="space-y-1">
                                             <label class="form-label text-purple-800">قيمة الكوتيشن الإجمالية (ريال)</label>
                                             <div class="relative">
-                                                <input type="number" id="design-total" value="${selectedClient?.design.total || ''}" class="form-input text-lg font-bold text-purple-700 pr-10 border-purple-200 focus:border-purple-500 focus:ring-purple-200" placeholder="0">
+                                                <input type="number" id="design-total" value="${selectedClient?.design.total || ''}" class="form-input text-lg font-bold text-purple-700 dark:text-purple-400 pr-10 border-purple-200 dark:border-purple-700 focus:border-purple-500 focus:ring-purple-200" placeholder="0">
                                                 <span class="absolute left-3 top-2.5 text-xs text-purple-400 font-bold">SAR</span>
                                             </div>
                                         </div>
                                         <div class="space-y-1">
                                             <label class="form-label text-purple-800">قيمة الدفعة الأولى (ريال)</label>
                                             <div class="relative">
-                                                <input type="number" id="design-first" value="${selectedClient?.design.firstPayment || ''}" class="form-input text-lg font-bold text-slate-700 pr-10 border-purple-200" placeholder="0">
+                                                <input type="number" id="design-first" value="${selectedClient?.design.firstPayment || ''}" class="form-input text-lg font-bold text-slate-700 dark:text-slate-200 pr-10 border-purple-200 dark:border-purple-700" placeholder="0">
                                                 <span class="absolute left-3 top-2.5 text-xs text-slate-400 font-bold">SAR</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="pt-6 border-t border-slate-100">
-                                    <div class="bg-white border border-slate-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+                                <div class="pt-6 border-t border-slate-100 dark:border-slate-700">
+                                    <div class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-4 mb-4 flex items-start gap-3">
                                         <input type="checkbox" id="signed" ${selectedClient?.design.signed ? 'checked' : ''} class="w-5 h-5 text-purple-600 rounded mt-0.5 cursor-pointer accent-purple-600">
                                         <div>
-                                            <label for="signed" class="font-bold text-slate-700 select-none cursor-pointer block">تأكيد توقيع العميل على العقد</label>
+                                            <label for="signed" class="font-bold text-slate-700 dark:text-slate-200 select-none cursor-pointer block">تأكيد توقيع العميل على العقد</label>
                                             <p class="text-xs text-slate-500 mt-1">عند التفعيل، ستتغير حالة العميل إلى "تم الاتفاق" ويمكن البدء بالتنفيذ.</p>
                                         </div>
                                     </div>
@@ -810,21 +904,21 @@
                     </div>
 
                     <div class="lg:col-span-1 space-y-4">
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 h-full flex flex-col">
-                            <h3 class="font-bold text-slate-700 mb-4 border-b pb-2">ملف العميل المختصر</h3>
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 h-full flex flex-col transition-colors">
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4 border-b dark:border-slate-700 pb-2">ملف العميل المختصر</h3>
                             <div class="flex-1">
                                 ${selectedClient ? `
                                     <div class="text-center mb-6">
-                                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl font-bold text-slate-600">
+                                        <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl font-bold text-slate-600 dark:text-slate-300">
                                             ${selectedClient.name.charAt(0)}
                                         </div>
-                                        <p class="font-bold text-lg text-slate-800">${selectedClient.name}</p>
+                                        <p class="font-bold text-lg text-slate-800 dark:text-white">${selectedClient.name}</p>
                                         <p class="text-sm text-slate-400 font-mono">${selectedClient.code}</p>
                                     </div>
-                                    <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm">
+                                    <div class="space-y-3 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-700 text-sm">
                                         <div class="flex justify-between">
                                             <span class="text-slate-500">الحالة الحالية:</span> 
-                                            <span class="font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-xs">${getStatusLabel(selectedClient.status)}</span>
+                                            <span class="font-bold px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-xs">${getStatusLabel(selectedClient.status)}</span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-slate-500">المقاسات:</span> 
@@ -854,9 +948,9 @@
                 <div class="space-y-6 animate-fadeIn">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-2">
-                          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 border-t-4 border-t-orange-500">
+                          <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 border-t-4 border-t-orange-500 transition-colors">
                             <div class="flex justify-between items-center mb-6">
-                              <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                              <h3 class="font-bold text-slate-800 dark:text-white text-lg flex items-center gap-2">
                                 <span class="p-2 bg-orange-100 rounded-lg text-orange-600"><i data-lucide="wrench" class="w-5 h-5"></i></span>
                                 تفاصيل المشروع والتركيب
                               </h3>
@@ -865,7 +959,7 @@
                             <div class="mb-6">
                                 <label class="form-label">اختيار العميل (مرحلة التركيب)</label>
                                 <div class="relative">
-                                    <select onchange="selectClientForInstall(this.value)" class="form-input appearance-none bg-slate-50 cursor-pointer">
+                                    <select onchange="selectClientForInstall(this.value)" class="form-input appearance-none bg-slate-50 dark:bg-slate-700 cursor-pointer">
                                         <option value="">اختر عميل...</option>
                                         ${clients.filter(c => c.design.signed).map(c => `<option value="${c.id}" ${c.id == selectedClientForInstallId ? 'selected' : ''}>${c.name}</option>`).join('')}
                                     </select>
@@ -876,7 +970,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 ${!selectedClient ? 'opacity-50 pointer-events-none filter blur-sm' : ''}">
                               <div class="space-y-1">
                                 <label class="form-label">رقم الوظيفة (Job No)</label>
-                                <input type="text" id="install-job" value="${selectedClient?.installation.jobNo || ''}" class="form-input bg-slate-50 text-right font-mono" placeholder="J-XXXX">
+                                <input type="text" id="install-job" value="${selectedClient?.installation.jobNo || ''}" class="form-input bg-slate-50 dark:bg-slate-700 text-right font-mono" placeholder="J-XXXX">
                               </div>
                               <div class="space-y-1">
                                 <label class="form-label">تاريخ بدء التركيب</label>
@@ -891,7 +985,7 @@
                               </div>
                             </div>
 
-                            <div class="mt-8 flex gap-3 justify-end pt-4 border-t border-slate-100">
+                            <div class="mt-8 flex gap-3 justify-end pt-4 border-t border-slate-100 dark:border-slate-700">
                                <button onclick="handleSaveInstallation()" class="bg-orange-500 text-white px-6 py-2.5 rounded-lg hover:bg-orange-600 flex items-center gap-2 shadow-lg shadow-orange-200 transition-all font-bold ${!selectedClient ? 'hidden' : ''}">
                                    <i data-lucide="calendar-check" class="w-5 h-5"></i> تحديث وجدولة
                                </button>
@@ -900,8 +994,8 @@
                         </div>
                         
                         <div class="lg:col-span-1 space-y-4">
-                             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                                <h4 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-2" class="w-4 h-4"></i> إحصائيات التركيب</h4>
+                             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 transition-colors">
+                                <h4 class="font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-2" class="w-4 h-4"></i> إحصائيات التركيب</h4>
                                 <div class="space-y-3">
                                     <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-100">
                                         <span class="text-sm text-blue-800">بالانتظار</span>
@@ -930,13 +1024,13 @@
                         ${renderStatCard('تم التعاقد', offers.filter(c => c.design.signed).length, 'check-circle', 'bg-white', 'text-slate-800', 'border-l-4 border-purple-500')}
                     </div>
 
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                            <h3 class="font-bold text-slate-700">قائمة عروض الأسعار والفواتير</h3>
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+                        <div class="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200">قائمة عروض الأسعار والفواتير</h3>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-right text-sm">
-                                <thead class="bg-slate-50 text-slate-500 border-b border-slate-100">
+                                <thead class="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-b border-slate-100 dark:border-slate-700">
                                     <tr>
                                         <th class="p-4">رقم العرض</th>
                                         <th class="p-4">العميل</th>
@@ -946,12 +1040,12 @@
                                         <th class="p-4 text-center">إجراء</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-slate-100">
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                                     ${offers.length > 0 ? offers.map(c => `
-                                        <tr class="hover:bg-slate-50 transition-colors">
+                                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                                             <td class="p-4 font-mono text-slate-500">${c.code}-QT</td>
-                                            <td class="p-4 font-bold text-slate-800">${c.name}</td>
-                                            <td class="p-4 text-slate-800 font-bold">${parseInt(c.design.total).toLocaleString()} ريال</td>
+                                            <td class="p-4 font-bold text-slate-800 dark:text-slate-200">${c.name}</td>
+                                            <td class="p-4 text-slate-800 dark:text-slate-200 font-bold">${parseInt(c.design.total).toLocaleString()} ريال</td>
                                             <td class="p-4 text-green-600">${parseInt(c.design.firstPayment).toLocaleString()} ريال</td>
                                             <td class="p-4">
                                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold ${c.design.signed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
@@ -959,8 +1053,11 @@
                                                 </span>
                                             </td>
                                             <td class="p-4 text-center">
-                                                <button class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors">
+                                                <button onclick="printInvoice(${c.id})" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors" title="طباعة عرض السعر">
                                                     <i data-lucide="printer" class="w-4 h-4"></i>
+                                                </button>
+                                                <button onclick="printReceipt(${c.id})" class="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors" title="طباعة سند قبض">
+                                                    <i data-lucide="banknote" class="w-4 h-4"></i>
                                                 </button>
                                             </td>
                                         </tr>
@@ -976,10 +1073,111 @@
         // 6. Reports View
         function renderReportsView(data) {
             return `
-                <div class="p-10 text-center bg-white rounded-2xl shadow-sm border border-slate-100">
-                    <i data-lucide="pie-chart" class="w-16 h-16 mx-auto text-slate-200 mb-4"></i>
-                    <h3 class="text-xl font-bold text-slate-700">التقارير</h3>
-                    <p class="text-slate-400 mt-2">صفحة التقارير قيد التطوير...</p>
+                <div class="space-y-6 animate-fadeIn">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Status Chart -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 transition-colors">
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4">توزيع حالات المشاريع</h3>
+                            <div class="relative h-64">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Financial Chart -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 transition-colors">
+                            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4">الملخص المالي</h3>
+                            <div class="relative h-64">
+                                <canvas id="financialChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
+                            <p class="text-sm text-slate-500 dark:text-slate-400">إجمالي العقود</p>
+                            <p class="text-2xl font-bold text-slate-800 dark:text-white" id="report-total-contracts">0 ريال</p>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
+                            <p class="text-sm text-slate-500 dark:text-slate-400">المحصل</p>
+                            <p class="text-2xl font-bold text-green-600" id="report-total-collected">0 ريال</p>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
+                            <p class="text-sm text-slate-500 dark:text-slate-400">المتبقي</p>
+                            <p class="text-2xl font-bold text-red-500" id="report-total-remaining">0 ريال</p>
+                        </div>
+                         <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
+                            <p class="text-sm text-slate-500 dark:text-slate-400">عدد العملاء</p>
+                            <p class="text-2xl font-bold text-blue-600">${data.length}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 7. Settings View
+        function renderSettingsView() {
+            return `
+                <div class="max-w-4xl mx-auto space-y-6 animate-fadeIn">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-8 transition-colors">
+                        <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+                            <i data-lucide="settings" class="w-6 h-6 text-slate-400"></i>
+                            إعدادات النظام والشركة
+                        </h2>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Logo Upload -->
+                            <div class="space-y-4">
+                                <label class="form-label">شعار الشركة</label>
+                                <div class="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative">
+                                    <div id="settings-logo-preview" class="w-32 h-32 bg-slate-100 dark:bg-slate-900 rounded-xl flex items-center justify-center mb-4 overflow-hidden shadow-sm">
+                                        ${companySettings.logo ? `<img src="${companySettings.logo}" class="w-full h-full object-cover">` : '<i data-lucide="image" class="w-10 h-10 text-slate-300"></i>'}
+                                    </div>
+                                    <input type="file" id="logo-upload" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleLogoUpload(this)">
+                                    <p class="text-sm text-slate-500 font-medium">اضغط لتغيير الشعار</p>
+                                    <p class="text-xs text-slate-400 mt-1">PNG, JPG (Max 2MB)</p>
+                                </div>
+                            </div>
+
+                            <!-- Company Info -->
+                            <div class="space-y-4">
+                                <div class="space-y-1">
+                                    <label class="form-label">اسم الشركة</label>
+                                    <input type="text" id="set-name" value="${companySettings.name}" class="form-input">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="form-label">وصف مختصر (تحت الشعار)</label>
+                                    <input type="text" id="set-subtitle" value="${companySettings.subtitle}" class="form-input">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="form-label">رقم الهاتف</label>
+                                    <input type="text" id="set-phone" value="${companySettings.phone}" class="form-input dir-ltr text-right">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="form-label">البريد الإلكتروني</label>
+                                    <input type="email" id="set-email" value="${companySettings.email}" class="form-input dir-ltr text-right">
+                                </div>
+                            </div>
+
+                            <!-- Address & Tax -->
+                            <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-1">
+                                    <label class="form-label">العنوان</label>
+                                    <input type="text" id="set-address" value="${companySettings.address}" class="form-input">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="form-label">الرقم الضريبي</label>
+                                    <input type="text" id="set-tax" value="${companySettings.taxId}" class="form-input font-mono">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+                            <button onclick="saveSettingsFromView()" class="bg-[#0f3057] text-white px-8 py-3 rounded-lg hover:bg-[#1a4b82] shadow-lg shadow-blue-900/20 font-bold flex items-center gap-2">
+                                <i data-lucide="save" class="w-5 h-5"></i> حفظ الإعدادات
+                            </button>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -987,7 +1185,7 @@
         // --- Helper Renderers ---
         function renderStatCard(title, val, icon, bgClass, textClass, borderClass = '') {
             return `
-                <div class="rounded-xl shadow-sm p-5 flex justify-between items-center ${bgClass} ${borderClass} transition-transform hover:-translate-y-1">
+                <div class="rounded-xl shadow-sm p-5 flex justify-between items-center ${bgClass} ${bgClass.includes('bg-white') ? 'dark:bg-slate-800' : ''} ${borderClass} transition-transform hover:-translate-y-1">
                     <div class="${textClass}">
                         <p class="text-sm opacity-80 font-medium mb-1">${title}</p>
                         <p class="text-3xl font-bold">${val}</p>
@@ -1001,11 +1199,11 @@
 
         function renderCounter(label, key) {
             return `
-                <div class="flex flex-col bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+                <div class="flex flex-col bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
                     <span class="text-xs font-bold text-slate-500 mb-2 text-center block">${label}</span>
-                    <div class="flex items-center justify-between bg-slate-50 rounded">
+                    <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-900 rounded">
                         <button onclick="updateCount('${key}', -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors font-bold text-lg">-</button>
-                        <span id="count-${key}" class="font-bold text-slate-700 text-sm">${newClientForm.projectDetails[key]}</span>
+                        <span id="count-${key}" class="font-bold text-slate-700 dark:text-slate-200 text-sm">${newClientForm.projectDetails[key]}</span>
                         <button onclick="updateCount('${key}', 1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-green-500 hover:bg-green-50 rounded transition-colors font-bold text-lg">+</button>
                     </div>
                 </div>
@@ -1051,6 +1249,80 @@
             if(md) md.oninput = (ev) => newClientForm.measureRequest.date = ev.target.value;
             if(mt) mt.oninput = (ev) => newClientForm.measureRequest.time = ev.target.value;
             if(ma) ma.oninput = (ev) => newClientForm.measureRequest.amount = ev.target.value;
+        }
+
+        function handleLogoUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    companySettings.logo = e.target.result;
+                    document.getElementById('settings-logo-preview').innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function saveSettingsFromView() {
+            companySettings.name = document.getElementById('set-name').value;
+            companySettings.subtitle = document.getElementById('set-subtitle').value;
+            companySettings.phone = document.getElementById('set-phone').value;
+            companySettings.email = document.getElementById('set-email').value;
+            companySettings.address = document.getElementById('set-address').value;
+            companySettings.taxId = document.getElementById('set-tax').value;
+            saveSettingsData();
+        }
+
+        function initReportsCharts() {
+            const ctxStatus = document.getElementById('statusChart');
+            const ctxFinancial = document.getElementById('financialChart');
+            
+            if(!ctxStatus || !ctxFinancial) return;
+
+            // Data Processing
+            const statusCounts = {};
+            STATUS_OPTIONS.forEach(s => statusCounts[s.id] = 0);
+            clients.forEach(c => {
+                if(statusCounts[c.status] !== undefined) statusCounts[c.status]++;
+                else statusCounts[c.status] = 1; // Fallback
+            });
+
+            const totalContracts = clients.reduce((sum, c) => sum + (parseInt(c.design.total) || 0), 0);
+            const totalCollected = clients.reduce((sum, c) => sum + (parseInt(c.design.firstPayment) || 0) + (parseInt(c.installation.lastPayment) || 0), 0);
+            const totalRemaining = totalContracts - totalCollected;
+
+            // Update Summary Cards
+            document.getElementById('report-total-contracts').textContent = totalContracts.toLocaleString() + ' ريال';
+            document.getElementById('report-total-collected').textContent = totalCollected.toLocaleString() + ' ريال';
+            document.getElementById('report-total-remaining').textContent = totalRemaining.toLocaleString() + ' ريال';
+
+            // Status Chart
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: STATUS_OPTIONS.map(s => s.label),
+                    datasets: [{
+                        data: STATUS_OPTIONS.map(s => statusCounts[s.id]),
+                        backgroundColor: ['#3b82f6', '#eab308', '#a855f7', '#6366f1', '#f97316', '#22c55e', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { family: 'Cairo' } } } } }
+            });
+
+            // Financial Chart
+            new Chart(ctxFinancial, {
+                type: 'bar',
+                data: {
+                    labels: ['إجمالي العقود', 'المحصل', 'المتبقي'],
+                    datasets: [{
+                        label: 'القيم المالية (ريال)',
+                        data: [totalContracts, totalCollected, totalRemaining],
+                        backgroundColor: ['#3b82f6', '#22c55e', '#ef4444'],
+                        borderRadius: 5
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
         }
 
         function updateCount(k, d) {
@@ -1151,10 +1423,12 @@
 
         function getMeasurementItems(client) {
             let items = [];
-            if (client.type === 'شركات' && client.customProjects && client.customProjects.length > 0) {
+            if (client.customProjects && client.customProjects.length > 0) {
                 client.customProjects.forEach((p, i) => items.push({ id: `custom-${i}`, label: `${p.name} (العدد: ${p.qty})` }));
-            } else {
-                const map = { kitchen: 'مطبخ', bedroom: 'غرفة نوم', cladding: 'تجليد', doors: 'أبواب', vanity: 'خزائن', tvUnit: 'وحدة TV' };
+            }
+            
+            const map = { kitchen: 'مطبخ', bedroom: 'غرفة نوم', cladding: 'تجليد', doors: 'أبواب', vanity: 'خزائن', tvUnit: 'وحدة TV' };
+            if (client.projectDetails) {
                 Object.entries(client.projectDetails).forEach(([key, count]) => {
                     if (count > 0) {
                         for(let i=1; i<=count; i++) items.push({ id: `${key}-${i}`, label: `${map[key] || key} ${count > 1 ? i : ''}` });
@@ -1248,26 +1522,374 @@
             const client = clients.find(c => c.id === id);
             if(!client) return;
             const modal = document.getElementById('clientModal');
+            
+            // Prepare Project Details HTML
+            let projectHtml = '';
+            // Handle legacy projectDetails
+            if(client.projectDetails && Object.values(client.projectDetails).some(v => v > 0)) {
+                Object.entries(client.projectDetails).forEach(([k, v]) => {
+                    if(v > 0) {
+                        const label = k === 'kitchen' ? 'مطبخ' : k === 'bedroom' ? 'غرفة نوم' : k === 'cladding' ? 'تجليد' : k === 'doors' ? 'أبواب' : k === 'vanity' ? 'خزائن' : k === 'tvUnit' ? 'وحدة TV' : k;
+                        projectHtml += `<span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-sm font-bold border border-blue-100">${label}: ${v}</span>`;
+                    }
+                });
+            }
+            // Handle customProjects
+            if(client.customProjects && client.customProjects.length > 0) {
+                client.customProjects.forEach(p => {
+                    projectHtml += `<span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-sm font-bold border border-blue-100">${p.name}: ${p.qty}</span>`;
+                });
+            }
+            if(!projectHtml) projectHtml = '<span class="text-slate-400 italic">لا توجد تفاصيل مسجلة</span>';
+
             modal.innerHTML = `
-                <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden animate-scaleIn max-h-[90vh] flex flex-col">
-                    <div class="bg-[#0f3057] text-white p-5 flex justify-between items-center">
+                <div class="bg-white dark:bg-slate-800 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden animate-scaleIn max-h-[90vh] flex flex-col transition-colors">
+                    <!-- Header -->
+                    <div class="bg-[#0f3057] text-white p-6 flex justify-between items-start">
                         <div>
-                            <h2 class="text-2xl font-bold">${client.name}</h2>
-                            <p class="text-sm text-blue-200 font-mono mt-1">${client.code} | ${client.phone}</p>
+                            <div class="flex items-center gap-3 mb-2">
+                                <h2 class="text-2xl font-bold">${client.name}</h2>
+                                <span class="bg-white/20 px-2 py-0.5 rounded text-xs font-mono">${client.code}</span>
+                                <span class="bg-white/10 px-2 py-0.5 rounded text-xs">${getStatusLabel(client.status)}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-4 text-sm text-blue-200">
+                                <span class="flex items-center gap-1"><i data-lucide="phone" class="w-3 h-3"></i> ${client.phone}</span>
+                                ${client.email ? `<span class="flex items-center gap-1"><i data-lucide="mail" class="w-3 h-3"></i> ${client.email}</span>` : ''}
+                            </div>
                         </div>
                         <button onclick="document.getElementById('clientModal').classList.add('hidden')" class="hover:bg-white/10 p-2 rounded-full transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
                     </div>
-                    <div class="p-8 text-center text-slate-500">تفاصيل العميل (قيد التطوير في العرض المحسن)</div>
+
+                    <!-- Body -->
+                    <div class="p-6 overflow-y-auto custom-scrollbar space-y-8">
+                        
+                        <!-- Info Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+                                <h3 class="text-xs font-bold text-slate-400 uppercase mb-3">البيانات الأساسية</h3>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between"><span class="text-slate-500">النوع:</span> <span class="font-medium dark:text-slate-200">${client.type}</span></div>
+                                    <div class="flex justify-between"><span class="text-slate-500">المصدر:</span> <span class="font-medium dark:text-slate-200">${client.source || '-'}</span></div>
+                                    <div class="flex justify-between"><span class="text-slate-500">الرقم الضريبي:</span> <span class="font-mono dark:text-slate-200">${client.taxId || '-'}</span></div>
+                                    <div class="flex justify-between"><span class="text-slate-500">العنوان:</span> <span class="font-medium dark:text-slate-200 truncate w-32 text-left" title="${client.address}">${client.address || '-'}</span></div>
+                                    ${client.location ? `<div class="flex justify-between items-center"><span class="text-slate-500">الموقع:</span> <a href="${client.location}" target="_blank" class="text-blue-600 hover:underline flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3"></i> الخريطة</a></div>` : ''}
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-700 md:col-span-2">
+                                <h3 class="text-xs font-bold text-slate-400 uppercase mb-3">تفاصيل المشروع</h3>
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    ${projectHtml}
+                                </div>
+                                ${client.notes ? `
+                                    <div class="pt-3 border-t border-slate-200 dark:border-slate-700">
+                                        <p class="text-xs text-slate-400 mb-1">ملاحظات:</p>
+                                        <p class="text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-600">${client.notes}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Workflow Status -->
+                        <div>
+                            <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="git-commit" class="w-5 h-5 text-blue-500"></i> مسار العمل</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Measurements -->
+                                <div class="border rounded-xl p-4 ${client.measurements.status === 'completed' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="font-bold text-sm flex items-center gap-2 dark:text-slate-200">
+                                            <i data-lucide="ruler" class="w-4 h-4"></i> المقاسات
+                                        </span>
+                                        ${client.measurements.status === 'completed' ? '<i data-lucide="check" class="w-4 h-4 text-green-600"></i>' : ''}
+                                    </div>
+                                    <p class="text-xs text-slate-500 mb-1">الحالة: <span class="font-bold dark:text-slate-300">${client.measurements.status === 'completed' ? 'مكتمل' : 'معلق'}</span></p>
+                                    ${client.appointment && client.appointment.date ? `<p class="text-[10px] text-slate-400">موعد: ${client.appointment.date} ${client.appointment.time}</p>` : ''}
+                                    ${client.measureRequest && client.measureRequest.date ? `
+                                        <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                                            <p class="text-[10px] font-bold text-slate-600">طلب العميل:</p>
+                                            <p class="text-[10px] text-slate-500">${client.measureRequest.date} - ${client.measureRequest.time}</p>
+                                            ${client.measureRequest.isPaid ? `<span class="text-[10px] text-green-600 font-bold">مدفوع (${client.measureRequest.amount})</span>` : '<span class="text-[10px] text-slate-400">غير مدفوع</span>'}
+                                        </div>
+                                    ` : ''}
+                                </div>
+
+                                <!-- Design -->
+                                <div class="border rounded-xl p-4 ${client.design.signed ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="font-bold text-sm flex items-center gap-2 dark:text-slate-200">
+                                            <i data-lucide="pen-tool" class="w-4 h-4"></i> التصميم
+                                        </span>
+                                        ${client.design.signed ? '<i data-lucide="check" class="w-4 h-4 text-purple-600"></i>' : ''}
+                                    </div>
+                                    <p class="text-xs text-slate-500 mb-1">الحالة: <span class="font-bold dark:text-slate-300">${client.design.signed ? 'تم التعاقد' : 'جاري العمل'}</span></p>
+                                    ${client.design.total > 0 ? `<p class="text-[10px] text-slate-400">العقد: ${parseInt(client.design.total).toLocaleString()} ريال</p>` : ''}
+                                </div>
+
+                                <!-- Installation -->
+                                <div class="border rounded-xl p-4 ${client.installation.startDate ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="font-bold text-sm flex items-center gap-2 dark:text-slate-200">
+                                            <i data-lucide="hammer" class="w-4 h-4"></i> التركيب
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mb-1">الحالة: <span class="font-bold dark:text-slate-300">${client.installation.startDate ? 'مجدول' : 'لم يحدد'}</span></p>
+                                    ${client.installation.startDate ? `<p class="text-[10px] text-slate-400">تاريخ: ${client.installation.startDate}</p>` : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Logs -->
+                        <div>
+                            <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="history" class="w-5 h-5 text-slate-400"></i> سجل النشاطات</h3>
+                            <div class="bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 p-4 max-h-48 overflow-y-auto custom-scrollbar space-y-3">
+                                ${client.logs && client.logs.length > 0 ? client.logs.map(log => `
+                                    <div class="flex gap-3 text-sm items-start">
+                                        <span class="text-slate-400 text-[10px] font-mono whitespace-nowrap bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-600 mt-0.5">${log.date}</span>
+                                        <p class="text-slate-600 dark:text-slate-300 leading-tight">${log.text}</p>
+                                    </div>
+                                `).join('') : '<p class="text-slate-400 text-sm italic text-center">لا يوجد سجل نشاط</p>'}
+                            </div>
+                        </div>
+
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="bg-slate-50 dark:bg-slate-900 p-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
+                        <button onclick="document.getElementById('clientModal').classList.add('hidden')" class="px-6 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors font-bold text-sm">إغلاق</button>
+                        <button onclick="openWhatsAppModal(${client.id})" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-bold text-sm flex items-center gap-2"><i data-lucide="message-circle" class="w-4 h-4"></i> مراسلة واتساب</button>
+                    </div>
                 </div>
             `;
             modal.classList.remove('hidden');
             lucide.createIcons();
         }
         
+        function printInvoice(id) {
+            const client = clients.find(c => c.id === id);
+            if(!client) return;
+
+            const printWindow = window.open('', '_blank');
+            const logo = companySettings.logo ? `<img src="${companySettings.logo}" style="width: 80px; height: 80px; object-fit: contain;">` : `
+                <svg viewBox="0 0 100 100" style="width: 80px; height: 80px;">
+                    <path d="M 10,50 A 40,40 0 1,1 90,50" fill="none" stroke="#0f3057" stroke-width="8" stroke-linecap="round" />
+                    <path d="M 90,50 A 40,40 0 1,1 10,50" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" />
+                    <text x="50" y="72" font-family="Arial, sans-serif" font-weight="800" font-size="60" text-anchor="middle" fill="#0f3057">1</text>
+                </svg>
+            `;
+
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>عرض سعر - ${client.name}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Cairo', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+                        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f3057; padding-bottom: 20px; margin-bottom: 40px; }
+                        .company-info h1 { color: #0f3057; margin: 0 0 10px 0; font-size: 24px; }
+                        .company-info p { margin: 2px 0; font-size: 13px; color: #64748b; }
+                        .invoice-meta { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; }
+                        .meta-item h3 { font-size: 12px; color: #64748b; margin: 0 0 5px 0; }
+                        .meta-item p { font-size: 16px; font-weight: bold; color: #0f172a; margin: 0; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+                        th { background: #0f3057; color: white; padding: 12px; text-align: right; font-size: 14px; }
+                        td { border-bottom: 1px solid #e2e8f0; padding: 12px; font-size: 14px; color: #334155; }
+                        .total-section { background: #f8fafc; padding: 20px; border-radius: 12px; margin-left: auto; width: 300px; }
+                        .total-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+                        .total-row.final { border-top: 1px solid #e2e8f0; padding-top: 10px; font-weight: bold; font-size: 18px; color: #0f3057; }
+                        .footer { margin-top: 60px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+                        @media print {
+                            body { padding: 0; }
+                            .no-print { display: none; }
+                            th { -webkit-print-color-adjust: exact; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="company-info">
+                            <h1>${companySettings.name}</h1>
+                            <p>${companySettings.address}</p>
+                            <p>هاتف: ${companySettings.phone}</p>
+                            <p>البريد الإلكتروني: ${companySettings.email}</p>
+                            <p>الرقم الضريبي: ${companySettings.taxId}</p>
+                        </div>
+                        <div>${logo}</div>
+                    </div>
+
+                    <div class="invoice-meta">
+                        <div class="meta-item">
+                            <h3>العميل</h3>
+                            <p>${client.name}</p>
+                            <p style="font-size: 12px; font-weight: normal; margin-top: 2px">${client.phone}</p>
+                        </div>
+                        <div class="meta-item">
+                            <h3>رقم الملف</h3>
+                            <p>${client.code}</p>
+                        </div>
+                        <div class="meta-item">
+                            <h3>التاريخ</h3>
+                            <p>${new Date().toLocaleDateString('en-US')}</p>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الوصف</th>
+                                <th width="150">القيمة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <strong>عرض سعر / عقد تنفيذ أعمال</strong><br>
+                                    <span style="font-size: 12px; color: #64748b">
+                                        يشمل: 
+                                        ${Object.entries(client.projectDetails).filter(([k,v]) => v > 0).map(([k,v]) => `${k === 'kitchen' ? 'مطبخ' : k === 'bedroom' ? 'غرفة نوم' : k === 'cladding' ? 'تجليد' : k === 'doors' ? 'أبواب' : k === 'vanity' ? 'خزائن' : k === 'tvUnit' ? 'وحدة TV' : k} (${v})`).join('، ')}
+                                        ${client.customProjects && client.customProjects.length ? '، ' + client.customProjects.map(p => `${p.name} (${p.qty})`).join('، ') : ''}
+                                    </span>
+                                </td>
+                                <td>${parseInt(client.design.total).toLocaleString()} ريال</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="total-section">
+                        <div class="total-row">
+                            <span>الإجمالي</span>
+                            <span>${parseInt(client.design.total).toLocaleString()} ريال</span>
+                        </div>
+                        <div class="total-row">
+                            <span>الدفعة الأولى</span>
+                            <span style="color: #16a34a">${parseInt(client.design.firstPayment).toLocaleString()} ريال</span>
+                        </div>
+                        <div class="total-row final">
+                            <span>المتبقي</span>
+                            <span>${(parseInt(client.design.total) - parseInt(client.design.firstPayment)).toLocaleString()} ريال</span>
+                        </div>
+                    </div>
+
+                    <div class="footer">
+                        <p>تم إصدار هذا المستند إلكترونياً من نظام إدارة العملاء CRP</p>
+                        <p>العنوان: الرياض - طريق الملك فهد - برج العليا</p>
+                    </div>
+                    <script>window.print();<\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        function printReceipt(id) {
+            const client = clients.find(c => c.id === id);
+            if(!client) return;
+
+            if(!client.design.firstPayment || client.design.firstPayment <= 0) {
+                alert('لا توجد دفعة أولى مسجلة لهذا العميل لطباعة سند لها.');
+                return;
+            }
+
+            const printWindow = window.open('', '_blank');
+            const logo = companySettings.logo ? `<img src="${companySettings.logo}" style="width: 80px; height: 80px; object-fit: contain;">` : `
+                <svg viewBox="0 0 100 100" style="width: 80px; height: 80px;">
+                    <path d="M 10,50 A 40,40 0 1,1 90,50" fill="none" stroke="#0f3057" stroke-width="8" stroke-linecap="round" />
+                    <path d="M 90,50 A 40,40 0 1,1 10,50" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" />
+                    <text x="50" y="72" font-family="Arial, sans-serif" font-weight="800" font-size="60" text-anchor="middle" fill="#0f3057">1</text>
+                </svg>
+            `;
+
+            // Prepare Project Details String
+            const projectDetailsText = Object.entries(client.projectDetails)
+                .filter(([k,v]) => v > 0)
+                .map(([k,v]) => `${k === 'kitchen' ? 'مطبخ' : k === 'bedroom' ? 'غرفة نوم' : k === 'cladding' ? 'تجليد' : k === 'doors' ? 'أبواب' : k === 'vanity' ? 'خزائن' : k === 'tvUnit' ? 'وحدة TV' : k} (${v})`)
+                .join('، ');
+            
+            const customDetailsText = client.customProjects && client.customProjects.length 
+                ? client.customProjects.map(p => `${p.name} (${p.qty})`).join('، ') 
+                : '';
+
+            const fullDetails = [projectDetailsText, customDetailsText].filter(Boolean).join('، ');
+
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>سند قبض - ${client.name}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Cairo', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; border: 1px solid #eee; }
+                        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f3057; padding-bottom: 20px; margin-bottom: 30px; }
+                        .company-info h1 { color: #0f3057; margin: 0 0 5px 0; font-size: 22px; }
+                        .company-info p { margin: 2px 0; font-size: 12px; color: #64748b; }
+                        .receipt-title { text-align: center; margin-bottom: 30px; }
+                        .receipt-title h2 { background: #f1f5f9; display: inline-block; padding: 10px 30px; border-radius: 20px; color: #0f3057; border: 1px solid #cbd5e1; }
+                        .content { line-height: 2.5; font-size: 16px; color: #334155; }
+                        .field { border-bottom: 1px dotted #94a3b8; padding: 0 10px; font-weight: bold; color: #0f172a; }
+                        .amount-box { border: 2px solid #0f3057; padding: 15px; border-radius: 10px; text-align: center; margin: 20px 0; background: #f8fafc; }
+                        .amount-box span { font-size: 24px; font-weight: bold; color: #0f3057; }
+                        .signatures { display: flex; justify-content: space-between; margin-top: 60px; padding-top: 20px; }
+                        .sig-block { text-align: center; width: 200px; }
+                        .sig-line { border-top: 1px solid #cbd5e1; margin-top: 40px; }
+                        @media print {
+                            body { border: none; padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="company-info">
+                            <h1>${companySettings.name}</h1>
+                            <p>${companySettings.address}</p>
+                            <p>هاتف: ${companySettings.phone}</p>
+                        </div>
+                        <div>${logo}</div>
+                    </div>
+
+                    <div class="receipt-title">
+                        <h2>سند قبض | RECEIPT VOUCHER</h2>
+                    </div>
+
+                    <div class="content">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                            <div>التاريخ: <span class="field">${new Date().toLocaleDateString('en-US')}</span></div>
+                            <div>رقم السند: <span class="field">RV-${client.code}-${Math.floor(Math.random() * 1000)}</span></div>
+                        </div>
+
+                        <div>استلمنا من السيد/السادة: <span class="field" style="display: inline-block; min-width: 300px;">${client.name}</span></div>
+                        
+                        <div class="amount-box">
+                            مبلغ وقدره: <span>${parseInt(client.design.firstPayment).toLocaleString()} ريال سعودي</span>
+                        </div>
+
+                        <div>وذلك مقابل: <span class="field">دفعة أولى - عقد تنفيذ أعمال</span></div>
+                        <div>تفاصيل المشروع: <span class="field" style="display: block; margin-top: 5px; line-height: 1.8;">${fullDetails}</span></div>
+                    </div>
+
+                    <div class="signatures">
+                        <div class="sig-block">
+                            <p>المحاسب</p>
+                            <div class="sig-line"></div>
+                        </div>
+                        <div class="sig-block">
+                            <p>المستلم</p>
+                            <div class="sig-line"></div>
+                        </div>
+                    </div>
+                    <script>window.print();<\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
         function openWhatsAppModal(id) {
              const c = clients.find(x => x.id === id);
              if(!c) return;
-             const url = `https://wa.me/${c.phone}`;
+             const phone = c.whatsapp || c.phone;
+             const url = `https://wa.me/${phone}`;
              window.open(url, '_blank');
         }
 
