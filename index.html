@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة العملاء - بيت الخزائن</title>
+    <title>نظام إدارة العملاء - CRP </title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -276,8 +276,12 @@
 
         let newClientForm = {
             code: generateCode(),
-            name: '', phone: '', email: '', address: '', type: 'أفراد',
-            projectDetails: { kitchen: 0, bedroom: 0, cladding: 0, doors: 0, vanity: 0, tvUnit: 0 }
+            name: '', phone: '', whatsapp: '', email: '', address: '', location: '', 
+            type: 'أفراد', source: 'social', taxId: '', clientStatus: 'potential',
+            projectDetails: { kitchen: 0, bedroom: 0, cladding: 0, doors: 0, vanity: 0, tvUnit: 0 },
+            customProjects: [], // For companies
+            notes: '',
+            measureRequest: { date: '', time: '', isPaid: false, amount: 0 }
         };
 
         // --- Initialization ---
@@ -426,7 +430,7 @@
                             <span class="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded">ID: ${newClientForm.code}</span>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
                             <div class="space-y-1">
                                 <label class="form-label">الاسم الكامل <span class="text-red-500">*</span></label>
                                 <input type="text" id="in-name" value="${newClientForm.name}" class="form-input" placeholder="اسم العميل...">
@@ -434,6 +438,10 @@
                             <div class="space-y-1">
                                 <label class="form-label">رقم الجوال <span class="text-red-500">*</span></label>
                                 <input type="text" id="in-phone" value="${newClientForm.phone}" class="form-input text-left dir-ltr font-mono" placeholder="05xxxxxxxx">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="form-label">رقم واتساب</label>
+                                <input type="text" id="in-whatsapp" value="${newClientForm.whatsapp}" class="form-input text-left dir-ltr font-mono" placeholder="05xxxxxxxx">
                             </div>
                             <div class="space-y-1">
                                 <label class="form-label">نوع العميل</label>
@@ -446,7 +454,32 @@
                                 <label class="form-label">البريد الإلكتروني</label>
                                 <input type="email" id="in-email" value="${newClientForm.email}" class="form-input" placeholder="example@mail.com">
                             </div>
-                            <div class="md:col-span-2 space-y-1">
+                            <div class="space-y-1">
+                                <label class="form-label">المصدر</label>
+                                <select id="in-source" class="form-input bg-white">
+                                    <option value="social" ${newClientForm.source === 'social' ? 'selected' : ''}>سوشيال ميديا</option>
+                                    <option value="showroom" ${newClientForm.source === 'showroom' ? 'selected' : ''}>زيارة المعرض</option>
+                                    <option value="website" ${newClientForm.source === 'website' ? 'selected' : ''}>موقع الكترونى</option>
+                                    <option value="referral" ${newClientForm.source === 'referral' ? 'selected' : ''}>عن طريق صديق</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="form-label">الرقم الضريبي</label>
+                                <input type="text" id="in-tax" value="${newClientForm.taxId}" class="form-input font-mono" placeholder="الرقم الضريبي للعميل">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="form-label">حالة العميل</label>
+                                <select id="in-status" class="form-input bg-white">
+                                    <option value="potential" ${newClientForm.clientStatus === 'potential' ? 'selected' : ''}>محتمل</option>
+                                    <option value="interested" ${newClientForm.clientStatus === 'interested' ? 'selected' : ''}>مهتم</option>
+                                    <option value="inquiry" ${newClientForm.clientStatus === 'inquiry' ? 'selected' : ''}>استفسار</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="form-label">رابط اللوكيشن</label>
+                                <input type="url" id="in-location" value="${newClientForm.location}" class="form-input text-left dir-ltr" placeholder="https://maps.google.com/...">
+                            </div>
+                            <div class="md:col-span-3 space-y-1">
                                 <label class="form-label">العنوان</label>
                                 <input type="text" id="in-address" value="${newClientForm.address}" class="form-input" placeholder="المدينة، الحي...">
                             </div>
@@ -457,17 +490,82 @@
                             <label class="text-sm font-bold text-slate-600 mb-4 block flex items-center gap-2">
                                 <i data-lucide="layers" class="w-4 h-4 text-blue-500"></i> تفاصيل المشروع المطلوبة:
                             </label>
-                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                                ${renderCounter('مطبخ', 'kitchen')}
-                                ${renderCounter('غرفة نوم', 'bedroom')}
-                                ${renderCounter('تجليد', 'cladding')}
-                                ${renderCounter('وحدة TV', 'tvUnit')}
-                                ${renderCounter('أبواب', 'doors')}
-                                ${renderCounter('مغاسل', 'vanity')}
+                            ${newClientForm.type === 'أفراد' ? `
+                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                    ${renderCounter('مطبخ', 'kitchen')}
+                                    ${renderCounter('غرفة نوم', 'bedroom')}
+                                    ${renderCounter('تجليد', 'cladding')}
+                                    ${renderCounter('وحدة TV', 'tvUnit')}
+                                    ${renderCounter('أبواب', 'doors')}
+                                    ${renderCounter('خزائن', 'vanity')}
+                                </div>
+                            ` : `
+                                <div class="space-y-3">
+                                    <div class="flex gap-2 items-end">
+                                        <div class="flex-1">
+                                            <label class="text-xs text-slate-500 mb-1 block">اسم البند</label>
+                                            <input type="text" id="comp-item-name" class="form-input" placeholder="مثال: مكتبة، دولاب..">
+                                        </div>
+                                        <div class="w-24">
+                                            <label class="text-xs text-slate-500 mb-1 block">العدد</label>
+                                            <input type="number" id="comp-item-qty" class="form-input" placeholder="0">
+                                        </div>
+                                        <button onclick="addCompanyItem()" class="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition-colors h-[42px] w-[42px] flex items-center justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                                    </div>
+                                    <div class="space-y-2 mt-3">
+                                        ${newClientForm.customProjects.map((item, idx) => `
+                                            <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                                                <span class="font-medium text-slate-700">${item.name}</span>
+                                                <div class="flex items-center gap-4">
+                                                    <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">العدد: ${item.qty}</span>
+                                                    <button onclick="removeCompanyItem(${idx})" class="text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                        ${newClientForm.customProjects.length === 0 ? '<p class="text-sm text-slate-400 text-center py-2 italic">لم يتم إضافة بنود بعد</p>' : ''}
+                                    </div>
+                                </div>
+                            `}
+                        </div>
+
+                        <!-- Measurement Request Section -->
+                        <div class="bg-blue-50/50 p-5 rounded-xl border border-blue-100 mb-6">
+                            <label class="text-sm font-bold text-blue-800 mb-4 block flex items-center gap-2">
+                                <i data-lucide="calendar-clock" class="w-4 h-4 text-blue-600"></i> طلب رفع مقاسات (اختياري):
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                <div class="space-y-1">
+                                    <label class="text-xs font-bold text-slate-500">تاريخ الزيارة</label>
+                                    <input type="date" id="in-measure-date" value="${newClientForm.measureRequest.date}" class="form-input">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-xs font-bold text-slate-500">الوقت</label>
+                                    <input type="time" id="in-measure-time" value="${newClientForm.measureRequest.time}" class="form-input">
+                                </div>
+                                <div class="flex items-center gap-2 h-[42px] bg-white px-3 rounded-lg border border-slate-200">
+                                    <input type="checkbox" id="in-measure-paid" onchange="togglePaidAmount()" ${newClientForm.measureRequest.isPaid ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded cursor-pointer">
+                                    <label for="in-measure-paid" class="text-sm text-slate-700 cursor-pointer select-none">مدفوع؟</label>
+                                </div>
+                                <div id="measure-amount-div" class="space-y-1 ${newClientForm.measureRequest.isPaid ? '' : 'hidden'}">
+                                    <label class="text-xs font-bold text-slate-500">المبلغ</label>
+                                    <input type="number" id="in-measure-amount" value="${newClientForm.measureRequest.amount}" class="form-input" placeholder="0.00">
+                                </div>
                             </div>
                         </div>
 
-                        <div class="flex justify-end">
+                        <!-- Notes -->
+                        <div class="mb-6">
+                            <label class="form-label">ملاحظات أخرى</label>
+                            <textarea id="in-notes" class="form-input h-24 resize-none" placeholder="أي تفاصيل إضافية...">${newClientForm.notes}</textarea>
+                        </div>
+
+                        <div class="flex flex-wrap gap-3 justify-end border-t border-slate-100 pt-4">
+                            <button onclick="notifyClient()" class="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 flex items-center gap-2 shadow-lg shadow-green-900/20 transition-all active:scale-95 font-bold">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i> إشعار العميل
+                            </button>
+                            <button onclick="sendToMeasurements()" class="bg-purple-600 text-white px-6 py-2.5 rounded-lg hover:bg-purple-700 flex items-center gap-2 shadow-lg shadow-purple-900/20 transition-all active:scale-95 font-bold">
+                                <i data-lucide="ruler" class="w-4 h-4"></i> إرسال لرفع المقاسات
+                            </button>
                             <button onclick="saveNewClient()" class="bg-[#0f3057] text-white px-8 py-2.5 rounded-lg hover:bg-[#1a4b82] flex items-center gap-2 shadow-lg shadow-blue-900/20 transition-all active:scale-95 font-bold">
                                 <i data-lucide="save" class="w-4 h-4"></i> حفظ البيانات
                             </button>
@@ -541,6 +639,7 @@
         function renderMeasurementsView(data) {
             const selectedClient = selectedClientId ? clients.find(c => c.id == selectedClientId) : null;
             const projectDetails = selectedClient ? selectedClient.projectDetails : { kitchen: 0, bedroom: 0, cladding: 0, doors: 0, vanity: 0, tvUnit: 0 };
+            const appointment = selectedClient?.appointment || { date: '', time: '', status: 'pending' };
             
             return `
                 <div class="space-y-6 max-w-5xl mx-auto">
@@ -579,34 +678,65 @@
                             </div>
                         </div>
 
-                        <!-- Project Details Summary -->
-                        <div class="bg-indigo-50/50 p-6 rounded-xl border border-indigo-100 mb-8 relative overflow-hidden">
-                           <div class="absolute top-0 right-0 w-1 h-full bg-indigo-400"></div>
-                           <h4 class="text-sm font-bold text-indigo-800 mb-3 flex items-center gap-2">
-                                <i data-lucide="clipboard-list" class="w-4 h-4"></i> ملخص الكميات (من التسجيل):
-                           </h4>
-                           <div class="flex gap-3 flex-wrap">
-                                ${Object.entries(projectDetails).map(([k, v]) => v > 0 ? 
-                                    `<div class="bg-white px-4 py-2 rounded-lg border border-indigo-100 shadow-sm flex flex-col items-center min-w-[80px]">
-                                        <span class="text-xs text-slate-500 mb-1">${k === 'kitchen' ? 'مطبخ' : k}</span>
-                                        <span class="font-bold text-indigo-600 text-lg">${v}</span>
-                                    </div>` : '').join('')}
-                                ${!selectedClient ? '<span class="text-sm text-slate-400 italic">يرجى اختيار عميل لعرض التفاصيل</span>' : ''}
-                           </div>
+                        <!-- 1. Appointment Section -->
+                        <div class="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-8 ${!selectedClient ? 'opacity-50 pointer-events-none' : ''}">
+                            <h4 class="text-sm font-bold text-blue-800 mb-4 flex items-center gap-2">
+                                <i data-lucide="calendar-clock" class="w-4 h-4"></i> تحديد موعد القياس
+                            </h4>
+                            <div class="flex flex-wrap items-end gap-4">
+                                <div class="space-y-1 flex-1 min-w-[200px]">
+                                    <label class="text-xs font-bold text-slate-500">تاريخ الزيارة</label>
+                                    <input type="date" id="measure-date" value="${appointment.date}" class="form-input">
+                                </div>
+                                <div class="space-y-1 flex-1 min-w-[150px]">
+                                    <label class="text-xs font-bold text-slate-500">وقت الزيارة</label>
+                                    <input type="time" id="measure-time" value="${appointment.time}" class="form-input">
+                                </div>
+                                <button onclick="saveAppointment()" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 shadow-sm font-bold transition-colors h-[42px]">
+                                    حفظ الموعد
+                                </button>
+                            </div>
                         </div>
 
-                        <!-- Upload Zones -->
-                        <div class="space-y-4 mb-8">
-                            <label class="form-label text-base">ملفات الميديا (فيديو / كروكي / صور):</label>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                ${renderUploadZone('video', 'رفع فيديو للموقع', 'MP4, MOV', 'bg-blue-50 border-blue-200 text-blue-500')}
-                                ${renderUploadZone('pen-tool', 'رفع كروكي القياسات', 'PDF, PNG', 'bg-purple-50 border-purple-200 text-purple-500')}
+                        <!-- 2. Measurement Items Uploads -->
+                        <div class="space-y-6 mb-8 ${!selectedClient ? 'opacity-50 pointer-events-none' : ''}">
+                            <div class="flex items-center justify-between">
+                                <label class="form-label text-base">تفاصيل الرفع المساحي (صور/فيديو + كروكي):</label>
+                                <span class="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded">يتم الرفع لكل بند على حدة</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 gap-4">
+                                ${selectedClient ? getMeasurementItems(selectedClient).map(item => `
+                                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 transition-colors">
+                                        <h5 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span> ${item.label}
+                                        </h5>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div class="upload-zone bg-slate-50 border-slate-200 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all h-32">
+                                                <i data-lucide="image" class="w-6 h-6 text-slate-400 mb-2"></i>
+                                                <span class="text-xs font-bold text-slate-600">صور/فيديو الموقع (قبل)</span>
+                                                <span class="text-[10px] text-slate-400 mt-1">JPG, MP4</span>
+                                            </div>
+                                            <div class="upload-zone bg-slate-50 border-slate-200 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-all h-32">
+                                                <i data-lucide="pen-tool" class="w-6 h-6 text-slate-400 mb-2"></i>
+                                                <span class="text-xs font-bold text-slate-600">كروكي المقاسات</span>
+                                                <span class="text-[10px] text-slate-400 mt-1">PDF, PNG</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('') : '<div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">اختر عميلاً لعرض البنود</div>'}
                             </div>
                         </div>
                         
-                        <div class="flex gap-4 pt-4 border-t border-slate-100">
-                            <button onclick="handleSaveMeasurements()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-200 flex items-center gap-2 font-bold transition-all active:scale-95 ${!selectedClientId ? 'opacity-50 cursor-not-allowed' : ''}">
-                                <i data-lucide="check-circle" class="w-5 h-5"></i> تأكيد وحفظ المقاسات
+                        <div class="flex flex-wrap gap-3 justify-end pt-4 border-t border-slate-100 ${!selectedClient ? 'opacity-50 pointer-events-none' : ''}">
+                            <button onclick="notifyClientMeasurement()" class="bg-green-600 text-white px-5 py-2.5 rounded-lg hover:bg-green-700 shadow-lg shadow-green-900/20 flex items-center gap-2 font-bold transition-all active:scale-95">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i> إشعار العميل
+                            </button>
+                            <button onclick="sendToDesign()" class="bg-purple-600 text-white px-5 py-2.5 rounded-lg hover:bg-purple-700 shadow-lg shadow-purple-900/20 flex items-center gap-2 font-bold transition-all active:scale-95">
+                                <i data-lucide="send" class="w-4 h-4"></i> إرسال للتصميم
+                            </button>
+                            <button onclick="handleSaveMeasurements()" class="bg-[#0f3057] text-white px-6 py-2.5 rounded-lg hover:bg-[#1a4b82] shadow-lg shadow-blue-900/20 flex items-center gap-2 font-bold transition-all active:scale-95">
+                                <i data-lucide="save" class="w-4 h-4"></i> تم رفع المقاسات
                             </button>
                         </div>
                     </div>
@@ -904,11 +1034,23 @@
         // --- Logic Handlers ---
         function attachInputListeners() {
             const n = document.getElementById('in-name'), p = document.getElementById('in-phone'), e = document.getElementById('in-email'), a = document.getElementById('in-address'), t = document.getElementById('in-type');
+            const w = document.getElementById('in-whatsapp'), l = document.getElementById('in-location'), s = document.getElementById('in-source'), tx = document.getElementById('in-tax'), st = document.getElementById('in-status'), nt = document.getElementById('in-notes');
+            const md = document.getElementById('in-measure-date'), mt = document.getElementById('in-measure-time'), ma = document.getElementById('in-measure-amount');
+
             if(n) n.oninput = (ev) => newClientForm.name = ev.target.value;
             if(p) p.oninput = (ev) => newClientForm.phone = ev.target.value;
             if(e) e.oninput = (ev) => newClientForm.email = ev.target.value;
             if(a) a.oninput = (ev) => newClientForm.address = ev.target.value;
-            if(t) t.onchange = (ev) => newClientForm.type = ev.target.value;
+            if(t) t.onchange = (ev) => { newClientForm.type = ev.target.value; render(); };
+            if(w) w.oninput = (ev) => newClientForm.whatsapp = ev.target.value;
+            if(l) l.oninput = (ev) => newClientForm.location = ev.target.value;
+            if(s) s.onchange = (ev) => newClientForm.source = ev.target.value;
+            if(tx) tx.oninput = (ev) => newClientForm.taxId = ev.target.value;
+            if(st) st.onchange = (ev) => newClientForm.clientStatus = ev.target.value;
+            if(nt) nt.oninput = (ev) => newClientForm.notes = ev.target.value;
+            if(md) md.oninput = (ev) => newClientForm.measureRequest.date = ev.target.value;
+            if(mt) mt.oninput = (ev) => newClientForm.measureRequest.time = ev.target.value;
+            if(ma) ma.oninput = (ev) => newClientForm.measureRequest.amount = ev.target.value;
         }
 
         function updateCount(k, d) {
@@ -916,31 +1058,111 @@
             render(); 
         }
 
-        function saveNewClient() {
+        function addCompanyItem() {
+            const name = document.getElementById('comp-item-name').value;
+            const qty = document.getElementById('comp-item-qty').value;
+            if(name && qty > 0) {
+                newClientForm.customProjects.push({ name, qty });
+                render();
+            }
+        }
+
+        function removeCompanyItem(idx) {
+            newClientForm.customProjects.splice(idx, 1);
+            render();
+        }
+
+        function togglePaidAmount() {
+            const isPaid = document.getElementById('in-measure-paid').checked;
+            newClientForm.measureRequest.isPaid = isPaid;
+            render();
+        }
+
+        function saveNewClient(targetStatus = null) {
             if(!newClientForm.name || !newClientForm.phone) return alert('الاسم ورقم الجوال مطلوبان');
             if(clients.some(c => c.phone === newClientForm.phone)) return alert('رقم الجوال مسجل مسبقاً!');
 
             const client = {
                 ...newClientForm,
                 id: Date.now(),
-                status: 'new',
-                source: 'معرض',
+                status: targetStatus || newClientForm.clientStatus || 'potential',
                 employeeId: currentUser.id,
                 logs: [{ date: new Date().toLocaleDateString('en-US'), type: 'system', text: 'تسجيل جديد' }],
                 measurements: { status: 'pending', date: '', files: [] },
+                appointment: { date: '', time: '', status: 'pending' },
                 design: { status: 'pending', total: 0, firstPayment: 0, signed: false },
                 installation: { status: 'pending', jobNo: '', startDate: '', endDate: '', lastPayment: 0 },
                 invoices: []
             };
+
+            if(targetStatus === 'measurements') {
+                client.logs.push({ date: new Date().toLocaleDateString('en-US'), type: 'system', text: 'تم التحويل لقسم القياسات' });
+            }
+
             clients.unshift(client);
-            newClientForm = { code: generateCode(), name: '', phone: '', email: '', address: '', type: 'أفراد', projectDetails: { kitchen: 0, bedroom: 0, cladding: 0, doors: 0, vanity: 0, tvUnit: 0 } };
+            
+            newClientForm = { 
+                code: generateCode(), 
+                name: '', phone: '', whatsapp: '', email: '', address: '', location: '', 
+                type: 'أفراد', source: 'social', taxId: '', clientStatus: 'potential',
+                projectDetails: { kitchen: 0, bedroom: 0, cladding: 0, doors: 0, vanity: 0, tvUnit: 0 },
+                customProjects: [],
+                notes: '',
+                measureRequest: { date: '', time: '', isPaid: false, amount: 0 }
+            };
+            
             saveClients();
             alert('تم الحفظ بنجاح');
+        }
+
+        function sendToMeasurements() {
+            if(confirm('هل أنت متأكد من حفظ البيانات وإرسالها لقسم رفع المقاسات؟')) {
+                saveNewClient('measurements');
+            }
+        }
+
+        function notifyClient() {
+            const phone = newClientForm.whatsapp || newClientForm.phone;
+            if(!phone) return alert('يرجى إدخال رقم الجوال أو الواتساب أولاً');
+            
+            const msg = `مرحباً ${newClientForm.name}،\nسعدنا بتواصلك مع بيت الخزائن.\nتم تسجيل بياناتك بنجاح برقم ملف: ${newClientForm.code}\nسيقوم فريقنا بالتواصل معك قريباً.`;
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
         }
 
         function selectClientForMeasure(id) { selectedClientId = id; render(); }
         function selectClientForDesign(id) { selectedClientForDesignId = id; render(); }
         function selectClientForInstall(id) { selectedClientForInstallId = id; render(); }
+
+        function saveAppointment() {
+            if (!selectedClientId) return;
+            const date = document.getElementById('measure-date').value;
+            const time = document.getElementById('measure-time').value;
+            if(!date || !time) return alert('يرجى تحديد التاريخ والوقت');
+            
+            const client = clients.find(c => c.id == selectedClientId);
+            if(client) {
+                client.appointment = { date, time, status: 'scheduled' };
+                client.logs.push({ date: new Date().toLocaleDateString('en-US'), type: 'system', text: `تم تحديد موعد قياس: ${date} ${time}` });
+                saveClients();
+                alert('تم حفظ الموعد بنجاح');
+            }
+        }
+
+        function getMeasurementItems(client) {
+            let items = [];
+            if (client.type === 'شركات' && client.customProjects && client.customProjects.length > 0) {
+                client.customProjects.forEach((p, i) => items.push({ id: `custom-${i}`, label: `${p.name} (العدد: ${p.qty})` }));
+            } else {
+                const map = { kitchen: 'مطبخ', bedroom: 'غرفة نوم', cladding: 'تجليد', doors: 'أبواب', vanity: 'خزائن', tvUnit: 'وحدة TV' };
+                Object.entries(client.projectDetails).forEach(([key, count]) => {
+                    if (count > 0) {
+                        for(let i=1; i<=count; i++) items.push({ id: `${key}-${i}`, label: `${map[key] || key} ${count > 1 ? i : ''}` });
+                    }
+                });
+            }
+            return items;
+        }
 
         function handleSaveMeasurements() {
             if (!selectedClientId) return;
@@ -948,9 +1170,43 @@
             if (client) {
                 client.measurements.status = 'completed';
                 client.measurements.date = new Date().toLocaleDateString('en-US');
-                if(client.status === 'new' || client.status === 'potential') client.status = 'measurements';
+                client.status = 'measurements';
+                client.logs.push({ date: new Date().toLocaleDateString('en-US'), type: 'system', text: 'تم رفع المقاسات' });
                 saveClients();
-                alert('تم تحديث حالة المقاسات للعميل');
+                render();
+                alert('تم حفظ المقاسات وتحديث الحالة');
+            }
+        }
+
+        function sendToDesign() {
+            if (!selectedClientId) return;
+            const client = clients.find(c => c.id == selectedClientId);
+            if (client) {
+                if(client.measurements.status !== 'completed') {
+                    if(!confirm('لم يتم تأكيد رفع المقاسات بعد. هل تريد المتابعة؟')) return;
+                }
+                client.status = 'design';
+                client.logs.push({ date: new Date().toLocaleDateString('en-US'), type: 'system', text: 'تم التحويل لقسم التصميم' });
+                saveClients();
+                render();
+                alert('تم إرسال العميل لقسم التصميم');
+            }
+        }
+
+        function notifyClientMeasurement() {
+            if (!selectedClientId) return;
+            const client = clients.find(c => c.id == selectedClientId);
+            if(client) {
+                let msg = `مرحباً ${client.name}،\n`;
+                if(client.appointment && client.appointment.status === 'scheduled') {
+                    msg += `تم تحديد موعد لرفع المقاسات بتاريخ ${client.appointment.date} الساعة ${client.appointment.time}.`;
+                } else if (client.measurements.status === 'completed') {
+                    msg += `تم الانتهاء من رفع المقاسات بنجاح، وجاري العمل على التصميم.`;
+                } else {
+                    msg += `نود إبلاغك بمستجدات مشروعك لدى بيت الخزائن.`;
+                }
+                const url = `https://wa.me/${client.phone}?text=${encodeURIComponent(msg)}`;
+                window.open(url, '_blank');
             }
         }
 
