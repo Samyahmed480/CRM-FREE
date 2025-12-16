@@ -51,7 +51,7 @@
             border: 1px solid #e2e8f0;
             border-radius: 0.5rem; /* rounded-lg */
             padding: 0.6rem 1rem;
-            font-size: 0.875rem;
+            font-size: 1rem; /* Prevent zoom on mobile */
             transition: all 0.2s;
             outline: none;
             background-color: #ffffff;
@@ -59,6 +59,11 @@
         .form-input:focus {
             border-color: #3b82f6; /* blue-500 */
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        @media (min-width: 768px) {
+            .form-input {
+                font-size: 0.875rem;
+            }
         }
         
         /* Dark Mode for Inputs */
@@ -142,8 +147,12 @@
 <body class="text-slate-800 h-screen flex overflow-hidden dark:text-slate-100">
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="bg-[#0f3057] text-white w-64 flex-shrink-0 flex flex-col transition-all duration-300 shadow-2xl z-20 h-full md:relative absolute transform -translate-x-full md:translate-x-0">
-        <div class="p-6 flex flex-col items-center border-b border-blue-900/50">
+    <aside id="sidebar" class="bg-[#0f3057] text-white w-64 flex-shrink-0 flex flex-col transition-all duration-300 shadow-2xl z-50 h-full md:relative fixed top-0 right-0 transform translate-x-full md:translate-x-0">
+        <div class="p-6 flex flex-col items-center border-b border-blue-900/50 relative">
+            <!-- Mobile Close Button -->
+            <button onclick="toggleSidebar()" class="md:hidden absolute top-4 left-4 text-blue-300 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
             <!-- Logo -->
             <div id="company-logo-container" class="w-20 h-20 mb-3 bg-[#fdf6e7] rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden transform rotate-3 hover:rotate-0 transition-transform duration-300">
                 <svg viewBox="0 0 100 100" class="w-full h-full p-1">
@@ -156,46 +165,54 @@
             <p id="company-subtitle-display" class="text-[10px] text-blue-200 mt-1 uppercase tracking-widest opacity-80">System Management</p>
         </div>
 
-        <nav class="flex-1 px-3 space-y-1.5 mt-6 overflow-y-auto custom-scrollbar">
+        <nav class="flex-1 px-3 space-y-2 md:space-y-1.5 mt-6 overflow-y-auto custom-scrollbar">
             <!-- Navigation Items -->
-            <button onclick="switchTab('registration')" id="nav-registration" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 active-nav-item group">
+            <button onclick="switchTab('registration')" id="nav-registration" class="w-full flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-lg transition-all duration-200 active-nav-item group">
                 <i data-lucide="user-check" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-                <span class="font-medium text-sm">تسجيل العملاء</span>
+                <span class="font-medium text-base md:text-sm">تسجيل العملاء</span>
             </button>
-            <button onclick="switchTab('measurements')" id="nav-measurements" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
+            <button onclick="switchTab('measurements')" id="nav-measurements" class="w-full flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
                 <i data-lucide="ruler" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-                <span class="font-medium text-sm">أخذ المقاسات</span>
+                <span class="font-medium text-base md:text-sm">أخذ المقاسات</span>
             </button>
-            <button onclick="switchTab('design')" id="nav-design" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
+            <button onclick="switchTab('design')" id="nav-design" class="w-full flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
                 <i data-lucide="pen-tool" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-                <span class="font-medium text-sm">التصميم</span>
+                <span class="font-medium text-base md:text-sm">التصميم</span>
             </button>
-            <button onclick="switchTab('pricing')" id="nav-pricing" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
+            <button onclick="switchTab('pricing')" id="nav-pricing" class="w-full flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
                 <i data-lucide="calculator" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-                <span class="font-medium text-sm">التسعير التفصيلي</span>
+                <span class="font-medium text-base md:text-sm">التسعير التفصيلي</span>
             </button>
-            <button onclick="switchTab('installation')" id="nav-installation" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
+            <button onclick="switchTab('installation')" id="nav-installation" class="w-full flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
                 <i data-lucide="hammer" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-                <span class="font-medium text-sm">مرحلة التركيب</span>
+                <span class="font-medium text-base md:text-sm">مرحلة التركيب</span>
             </button>
             
             <div class="my-3 border-t border-blue-800/30 mx-2"></div>
             
-            <button onclick="switchTab('offers')" id="nav-offers" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
+            <button onclick="switchTab('offers')" id="nav-offers" class="w-full flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
                 <i data-lucide="file-text" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-                <span class="font-medium text-sm">العروض والفواتير</span>
+                <span class="font-medium text-base md:text-sm">العروض والفواتير</span>
             </button>
-            <button onclick="switchTab('financials')" id="nav-financials" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
+            <button onclick="switchTab('financials')" id="nav-financials" class="w-full flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
                 <i data-lucide="wallet" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-                <span class="font-medium text-sm">المتابعة المالية</span>
+                <span class="font-medium text-base md:text-sm">المتابعة المالية</span>
             </button>
-            <button onclick="switchTab('reports')" id="nav-reports" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
+            <button onclick="switchTab('accounts')" id="nav-accounts" class="w-full flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
+                <i data-lucide="landmark" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                <span class="font-medium text-base md:text-sm">الحسابات والمصروفات</span>
+            </button>
+            <button onclick="switchTab('reports')" id="nav-reports" class="w-full flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
                 <i data-lucide="layout-dashboard" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-                <span class="font-medium text-sm">التقارير</span>
+                <span class="font-medium text-base md:text-sm">التقارير</span>
             </button>
-            <button onclick="switchTab('settings')" id="nav-settings" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
+            <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
+                <i data-lucide="users" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                <span class="font-medium text-base md:text-sm">إدارة المستخدمين</span>
+            </button>
+            <button onclick="switchTab('settings')" id="nav-settings" class="w-full flex items-center gap-3 px-4 py-3.5 md:py-3 rounded-lg transition-all duration-200 inactive-nav-item group">
                 <i data-lucide="settings" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
-                <span class="font-medium text-sm">الإعدادات</span>
+                <span class="font-medium text-base md:text-sm">الإعدادات</span>
             </button>
         </nav>
 
@@ -218,12 +235,12 @@
     </aside>
 
     <!-- Overlay for mobile sidebar -->
-    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-10 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
     <!-- Main Content -->
     <main class="flex-1 flex flex-col overflow-hidden relative w-full bg-[#f8f9fc] dark:bg-slate-900 transition-colors">
         <!-- Header -->
-        <header class="bg-white dark:bg-slate-800 shadow-sm min-h-16 h-auto py-2 md:py-0 flex flex-wrap md:flex-nowrap items-center justify-between px-4 md:px-6 z-10 sticky top-0 border-b border-slate-100 dark:border-slate-700 transition-colors gap-y-2">
+        <header class="bg-white dark:bg-slate-800 shadow-sm min-h-16 h-auto py-2 md:py-0 flex flex-wrap md:flex-nowrap items-center justify-between px-4 md:px-6 z-30 sticky top-0 border-b border-slate-100 dark:border-slate-700 transition-colors gap-y-2">
             <div class="flex items-center gap-4">
                 <button onclick="toggleSidebar()" class="md:hidden text-slate-500 dark:text-slate-400 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                     <i data-lucide="menu" class="w-6 h-6"></i>
@@ -281,9 +298,9 @@
     <!-- JavaScript Application Logic -->
     <script>
         // --- Data & Constants ---
-        const EMPLOYEES = [
-            { id: 1, name: 'خالد رمزي', role: 'admin' },
-            { id: 2, name: 'أحمد مندوب', role: 'sales' }
+        let users = [
+            { id: 1, name: 'خالد رمزي', role: 'admin', username: 'admin' },
+            { id: 2, name: 'أحمد مندوب', role: 'sales', username: 'sales' }
         ];
 
         let companySettings = {
@@ -298,7 +315,7 @@
             logo: '' 
         };
 
-        let currentUser = EMPLOYEES[0]; // Start as Admin
+        let currentUser = users[0]; // Start as Admin
 
         const INITIAL_CLIENTS = [
             { 
@@ -350,6 +367,16 @@
             { id: 'rejected', label: 'مرفوض', color: 'bg-red-100 text-red-700 border-red-200' },
         ];
 
+        const EXPENSE_CATEGORIES = [
+            { id: 'rent', label: 'إيجارات', icon: 'building' },
+            { id: 'salaries', label: 'رواتب وأجور', icon: 'users' },
+            { id: 'bills', label: 'فواتير وخدمات', icon: 'zap' },
+            { id: 'materials', label: 'مشتريات ومواد', icon: 'shopping-cart' },
+            { id: 'marketing', label: 'تسويق وإعلانات', icon: 'megaphone' },
+            { id: 'maintenance', label: 'صيانة وتشغيل', icon: 'wrench' },
+            { id: 'other', label: 'نثريات أخرى', icon: 'more-horizontal' }
+        ];
+
         // --- State Management ---
         let clients = [];
         let activeTab = 'registration';
@@ -372,9 +399,17 @@
             measureRequest: { date: '', time: '', isPaid: false, amount: 0 }
         };
 
+        let expenses = [
+            { id: 1, category: 'rent', amount: 15000, date: '2025-01-01', description: 'إيجار المعرض - ربع سنوي' },
+            { id: 2, category: 'salaries', amount: 8500, date: '2025-01-25', description: 'رواتب شهر يناير' },
+            { id: 3, category: 'bills', amount: 1200, date: '2025-02-02', description: 'فاتورة كهرباء' }
+        ];
+
         // --- Initialization ---
         function init() {
             loadClients();
+            loadExpenses();
+            loadUsers();
             loadSettings();
             initDarkMode();
             render();
@@ -397,6 +432,27 @@
                     alert('حدث خطأ أثناء الحفظ: ' + e.message);
                 }
             }
+        }
+
+        function loadExpenses() {
+            const saved = localStorage.getItem('crm_expenses');
+            if(saved) expenses = JSON.parse(saved);
+        }
+
+        function saveExpenses() {
+            localStorage.setItem('crm_expenses', JSON.stringify(expenses));
+            render();
+        }
+
+        function loadUsers() {
+            const saved = localStorage.getItem('crm_users');
+            if(saved) users = JSON.parse(saved);
+            if(!currentUser) currentUser = users[0];
+        }
+
+        function saveUsers() {
+            localStorage.setItem('crm_users', JSON.stringify(users));
+            render();
         }
 
         function loadSettings() {
@@ -434,7 +490,9 @@
         function generateCode() { return 'BK-' + Math.floor(1000 + Math.random() * 9000); }
 
         function toggleRole() {
-            currentUser = currentUser.role === 'admin' ? EMPLOYEES[1] : EMPLOYEES[0];
+            const currentIndex = users.findIndex(u => u.id === currentUser.id);
+            const nextIndex = (currentIndex + 1) % users.length;
+            currentUser = users[nextIndex];
             document.getElementById('user-name').textContent = currentUser.name;
             document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'مدير النظام' : 'مندوب مبيعات';
             document.getElementById('role-indicator').className = `absolute bottom-0 right-0 w-2.5 h-2.5 border-2 border-[#0a2342] rounded-full ${currentUser.role === 'admin' ? 'bg-green-400' : 'bg-yellow-400'}`;
@@ -478,7 +536,7 @@
             }
             
             if(window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('sidebar').classList.add('translate-x-full');
                 document.getElementById('sidebarOverlay').classList.add('hidden');
             }
 
@@ -493,11 +551,11 @@
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
+            if (sidebar.classList.contains('translate-x-full')) {
+                sidebar.classList.remove('translate-x-full');
                 overlay.classList.remove('hidden');
             } else {
-                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.add('translate-x-full');
                 overlay.classList.add('hidden');
             }
         }
@@ -532,6 +590,10 @@
                 html = renderOffersView(visibleClients);
             } else if (activeTab === 'financials') {
                 html = renderFinancialsView(visibleClients);
+            } else if (activeTab === 'accounts') {
+                html = renderAccountsView(visibleClients);
+            } else if (activeTab === 'users') {
+                html = renderUsersView();
             } else if (activeTab === 'reports') {
                 html = renderReportsView(clients);
             } else if (activeTab === 'settings') {
@@ -723,25 +785,25 @@
                             <table class="w-full text-right text-sm">
                                 <thead class="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-300 font-medium">
                                     <tr>
-                                        <th class="p-4">بيانات العميل</th>
-                                        <th class="p-4">الجوال</th>
-                                        <th class="p-4">المشاريع</th>
-                                        <th class="p-4">الحالة</th>
-                                        <th class="p-4 text-center">إجراءات</th>
+                                        <th class="p-3">بيانات العميل</th>
+                                        <th class="p-3">الجوال</th>
+                                        <th class="p-3">المشاريع</th>
+                                        <th class="p-3">الحالة</th>
+                                        <th class="p-3 text-center">إجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                                     ${data.map(c => `
                                         <tr class="hover:bg-blue-50/30 dark:hover:bg-slate-700/50 transition-colors group">
-                                            <td class="p-4">
+                                            <td class="p-3">
                                                 <div class="font-bold text-[#0f3057] dark:text-blue-300 text-base">${c.name}</div>
                                                 <div class="text-xs text-slate-400 font-mono flex items-center gap-1">
                                                     <span class="bg-slate-100 dark:bg-slate-700 px-1 rounded">${c.code}</span>
                                                     ${c.type === 'شركات' ? '<span class="bg-orange-100 text-orange-700 px-1 rounded">شركة</span>' : ''}
                                                 </div>
                                             </td>
-                                            <td class="p-4 font-mono dir-ltr text-right text-slate-600 dark:text-slate-300">${c.phone}</td>
-                                            <td class="p-4">
+                                            <td class="p-3 font-mono dir-ltr text-right text-slate-600 dark:text-slate-300">${c.phone}</td>
+                                            <td class="p-3">
                                                 <div class="flex gap-1 flex-wrap">
                                                     ${Object.entries(c.projectDetails).map(([k, v]) => v > 0 ? 
                                                         `<span class="text-[10px] bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300 shadow-sm">${k === 'kitchen' ? 'مطبخ' : k === 'bedroom' ? 'نوم' : k} <b class="text-blue-600 dark:text-blue-400">${v}</b></span>` 
@@ -751,12 +813,12 @@
                                                     ).join('')}
                                                 </div>
                                             </td>
-                                            <td class="p-4">
+                                            <td class="p-3">
                                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusColor(c.status)}">
                                                     ${getStatusLabel(c.status)}
                                                 </span>
                                             </td>
-                                            <td class="p-4">
+                                            <td class="p-3">
                                                 <div class="flex items-center justify-center gap-2">
                                                     <button onclick="openWhatsAppModal(${c.id})" class="p-2 text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors" title="واتساب">
                                                         <i data-lucide="message-circle" class="w-4 h-4"></i>
@@ -1309,27 +1371,27 @@
                             <table class="w-full text-right text-sm">
                                 <thead class="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-b border-slate-100 dark:border-slate-700">
                                     <tr>
-                                        <th class="p-4">رقم العرض</th>
-                                        <th class="p-4">العميل</th>
-                                        <th class="p-4">القيمة الإجمالية</th>
-                                        <th class="p-4">الدفعة الأولى</th>
-                                        <th class="p-4">الحالة</th>
-                                        <th class="p-4 text-center">إجراء</th>
+                                        <th class="p-3">رقم العرض</th>
+                                        <th class="p-3">العميل</th>
+                                        <th class="p-3">القيمة الإجمالية</th>
+                                        <th class="p-3">الدفعة الأولى</th>
+                                        <th class="p-3">الحالة</th>
+                                        <th class="p-3 text-center">إجراء</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                                     ${offers.length > 0 ? offers.map(c => `
                                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                            <td class="p-4 font-mono text-slate-500">${c.code}-QT</td>
-                                            <td class="p-4 font-bold text-slate-800 dark:text-slate-200">${c.name}</td>
-                                            <td class="p-4 text-slate-800 dark:text-slate-200 font-bold">${parseInt(c.design.total).toLocaleString()} ريال</td>
-                                            <td class="p-4 text-green-600">${parseInt(c.design.firstPayment).toLocaleString()} ريال</td>
-                                            <td class="p-4">
+                                            <td class="p-3 font-mono text-slate-500">${c.code}-QT</td>
+                                            <td class="p-3 font-bold text-slate-800 dark:text-slate-200">${c.name}</td>
+                                            <td class="p-3 text-slate-800 dark:text-slate-200 font-bold">${parseInt(c.design.total).toLocaleString()} ريال</td>
+                                            <td class="p-3 text-green-600">${parseInt(c.design.firstPayment).toLocaleString()} ريال</td>
+                                            <td class="p-3">
                                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold ${c.design.signed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
                                                     ${c.design.signed ? 'تم التعاقد' : 'بانتظار الموافقة'}
                                                 </span>
                                             </td>
-                                            <td class="p-4 text-center">
+                                            <td class="p-3 text-center">
                                                 <button onclick="printInvoice(${c.id})" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors" title="طباعة عرض السعر">
                                                     <i data-lucide="printer" class="w-4 h-4"></i>
                                                 </button>
@@ -1377,13 +1439,13 @@
                             <table class="w-full text-right text-sm">
                                 <thead class="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-300 font-medium">
                                     <tr>
-                                        <th class="p-4">العميل</th>
-                                        <th class="p-4">قيمة العقد</th>
-                                        <th class="p-4">المدفوع</th>
-                                        <th class="p-4">المتبقي</th>
-                                        <th class="p-4 w-1/4">نسبة السداد</th>
-                                        <th class="p-4">الحالة</th>
-                                        <th class="p-4 text-center">إجراء</th>
+                                        <th class="p-3">العميل</th>
+                                        <th class="p-3">قيمة العقد</th>
+                                        <th class="p-3">المدفوع</th>
+                                        <th class="p-3">المتبقي</th>
+                                        <th class="p-3 w-1/4">نسبة السداد</th>
+                                        <th class="p-3">الحالة</th>
+                                        <th class="p-3 text-center">إجراء</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -1396,14 +1458,14 @@
                                         
                                         return `
                                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                            <td class="p-4">
+                                            <td class="p-3">
                                                 <div class="font-bold text-slate-800 dark:text-slate-200">${c.name}</div>
                                                 <div class="text-xs text-slate-400 font-mono">${c.code}</div>
                                             </td>
-                                            <td class="p-4 font-bold text-slate-700 dark:text-slate-300">${total.toLocaleString()}</td>
-                                            <td class="p-4 text-green-600 font-bold">${paid.toLocaleString()}</td>
-                                            <td class="p-4 text-red-500 font-bold">${remaining.toLocaleString()}</td>
-                                            <td class="p-4">
+                                            <td class="p-3 font-bold text-slate-700 dark:text-slate-300">${total.toLocaleString()}</td>
+                                            <td class="p-3 text-green-600 font-bold">${paid.toLocaleString()}</td>
+                                            <td class="p-3 text-red-500 font-bold">${remaining.toLocaleString()}</td>
+                                            <td class="p-3">
                                                 <div class="flex items-center gap-2">
                                                     <div class="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                                                         <div class="h-full bg-blue-500 rounded-full" style="width: ${percent}%"></div>
@@ -1411,12 +1473,12 @@
                                                     <span class="text-xs font-bold text-slate-500">${percent}%</span>
                                                 </div>
                                             </td>
-                                            <td class="p-4">
+                                            <td class="p-3">
                                                 ${remaining <= 0 
                                                     ? '<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold">خالص</span>' 
                                                     : '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-bold">متبقي</span>'}
                                             </td>
-                                            <td class="p-4 text-center">
+                                            <td class="p-3 text-center">
                                                 <button onclick="openClientModal(${c.id})" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors" title="عرض التفاصيل">
                                                     <i data-lucide="eye" class="w-4 h-4"></i>
                                                 </button>
@@ -1427,6 +1489,189 @@
                                     ${data.filter(c => (parseFloat(c.design.total) || 0) > 0).length === 0 ? '<tr><td colspan="6" class="text-center py-8 text-slate-400">لا توجد عقود مالية مسجلة</td></tr>' : ''}
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 6.5 Accounts View (New)
+        function renderAccountsView(data) {
+            // Calculate Totals
+            const totalIncome = data.reduce((sum, c) => sum + (parseFloat(c.design.firstPayment)||0) + (parseFloat(c.installation.lastPayment)||0), 0);
+            const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+            const netProfit = totalIncome - totalExpenses;
+
+            return `
+                <div class="space-y-6 animate-fadeIn">
+                    <!-- Financial Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        ${renderStatCard('إجمالي الإيرادات', totalIncome.toLocaleString() + ' ريال', 'arrow-down-circle', 'bg-green-600', 'text-white')}
+                        ${renderStatCard('إجمالي المصروفات', totalExpenses.toLocaleString() + ' ريال', 'arrow-up-circle', 'bg-red-500', 'text-white')}
+                        ${renderStatCard('صافي الأرباح', netProfit.toLocaleString() + ' ريال', 'wallet', 'bg-white', 'text-slate-800', `border-l-4 ${netProfit >= 0 ? 'border-green-500' : 'border-red-500'}`)}
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Expenses List -->
+                        <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+                            <div class="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
+                                <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                    <i data-lucide="list-minus" class="w-5 h-5 text-slate-400"></i> سجل المصروفات
+                                </h3>
+                                <button onclick="exportExpenses()" class="text-xs flex items-center gap-1 text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors">
+                                    <i data-lucide="download" class="w-3 h-3"></i> تصدير
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar">
+                                <table class="w-full text-right text-sm">
+                                    <thead class="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-300 font-medium sticky top-0 z-10">
+                                        <tr>
+                                            <th class="p-3">التاريخ</th>
+                                            <th class="p-3">البند</th>
+                                            <th class="p-3">الوصف</th>
+                                            <th class="p-3">المبلغ</th>
+                                            <th class="p-3 w-10"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                                        ${expenses.sort((a,b) => new Date(b.date) - new Date(a.date)).map(e => {
+                                            const cat = EXPENSE_CATEGORIES.find(c => c.id === e.category) || { label: e.category, icon: 'circle' };
+                                            return `
+                                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors group">
+                                                <td class="p-3 font-mono text-slate-500 dark:text-slate-400">${e.date}</td>
+                                                <td class="p-3">
+                                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                        <i data-lucide="${cat.icon}" class="w-3 h-3"></i> ${cat.label}
+                                                    </span>
+                                                </td>
+                                                <td class="p-3 text-slate-700 dark:text-slate-200">${e.description}</td>
+                                                <td class="p-3 font-bold text-red-500">${parseFloat(e.amount).toLocaleString()}</td>
+                                                <td class="p-3 text-center">
+                                                    <button onclick="deleteExpense(${e.id})" class="text-red-400 hover:bg-red-50 p-1.5 rounded transition-colors opacity-0 group-hover:opacity-100">
+                                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            `;
+                                        }).join('')}
+                                        ${expenses.length === 0 ? '<tr><td colspan="5" class="text-center py-8 text-slate-400">لا توجد مصروفات مسجلة</td></tr>' : ''}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Add Expense Form -->
+                        <div class="lg:col-span-1">
+                            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 sticky top-24 transition-colors">
+                                <h3 class="font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-4">
+                                    <i data-lucide="plus-circle" class="w-5 h-5 text-blue-600"></i> تسجيل مصروف جديد
+                                </h3>
+                                
+                                <div class="space-y-4">
+                                    <div class="space-y-1">
+                                        <label class="form-label">نوع المصروف</label>
+                                        <select id="exp-category" class="form-input bg-white dark:bg-slate-700">
+                                            ${EXPENSE_CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="form-label">المبلغ (ريال)</label>
+                                        <input type="number" id="exp-amount" class="form-input" placeholder="0.00">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="form-label">التاريخ</label>
+                                        <input type="date" id="exp-date" value="${new Date().toISOString().split('T')[0]}" class="form-input">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="form-label">الوصف / ملاحظات</label>
+                                        <textarea id="exp-desc" class="form-input h-24 resize-none" placeholder="تفاصيل المصروف..."></textarea>
+                                    </div>
+                                    <button onclick="addExpense()" class="w-full bg-[#0f3057] text-white py-3 rounded-lg hover:bg-[#1a4b82] shadow-lg shadow-blue-900/20 font-bold flex items-center justify-center gap-2 transition-all active:scale-95 mt-2">
+                                        <i data-lucide="save" class="w-4 h-4"></i> حفظ المصروف
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 6.6 Users View (New)
+        function renderUsersView() {
+            return `
+                <div class="space-y-6 animate-fadeIn">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Users List -->
+                        <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+                            <div class="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
+                                <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                    <i data-lucide="users" class="w-5 h-5 text-slate-400"></i> قائمة المستخدمين
+                                </h3>
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-bold">${users.length} مستخدم</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-right text-sm">
+                                    <thead class="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-300 font-medium">
+                                        <tr>
+                                            <th class="p-3">الاسم</th>
+                                            <th class="p-3">اسم المستخدم</th>
+                                            <th class="p-3">الصلاحية</th>
+                                            <th class="p-3 text-center">إجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                                        ${users.map(u => `
+                                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                                <td class="p-3 font-bold text-slate-800 dark:text-slate-200">${u.name}</td>
+                                                <td class="p-3 text-slate-600 dark:text-slate-400 font-mono">${u.username || '-'}</td>
+                                                <td class="p-3">
+                                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold ${getRoleBadgeColor(u.role)}">
+                                                        ${getRoleLabel(u.role)}
+                                                    </span>
+                                                </td>
+                                                <td class="p-3 text-center">
+                                                    <button onclick="deleteUser(${u.id})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition-colors" ${u.id === 1 ? 'disabled opacity-50 cursor-not-allowed' : ''}>
+                                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Add User Form -->
+                        <div class="lg:col-span-1">
+                            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 sticky top-24 transition-colors">
+                                <h3 class="font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-4">
+                                    <i data-lucide="user-plus" class="w-5 h-5 text-blue-600"></i> إضافة مستخدم جديد
+                                </h3>
+                                
+                                <div class="space-y-4">
+                                    <div class="space-y-1">
+                                        <label class="form-label">الاسم الكامل</label>
+                                        <input type="text" id="user-name-input" class="form-input" placeholder="مثال: محمد علي">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="form-label">اسم المستخدم (للدخول)</label>
+                                        <input type="text" id="user-username-input" class="form-input" placeholder="username">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="form-label">الصلاحية</label>
+                                        <select id="user-role-input" class="form-input bg-white dark:bg-slate-700">
+                                            <option value="sales">مندوب مبيعات</option>
+                                            <option value="admin">مدير نظام</option>
+                                            <option value="designer">مصمم</option>
+                                            <option value="accountant">محاسب</option>
+                                        </select>
+                                    </div>
+                                    <button onclick="addNewUser()" class="w-full bg-[#0f3057] text-white py-3 rounded-lg hover:bg-[#1a4b82] shadow-lg shadow-blue-900/20 font-bold flex items-center justify-center gap-2 transition-all active:scale-95 mt-2">
+                                        <i data-lucide="save" class="w-4 h-4"></i> حفظ المستخدم
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1660,6 +1905,21 @@
 
         function getStatusLabel(s) { const o = STATUS_OPTIONS.find(x => x.id === s); return o ? o.label : s; }
         function getStatusColor(s) { const o = STATUS_OPTIONS.find(x => x.id === s); return o ? o.color : 'bg-gray-100'; }
+
+        function getRoleLabel(role) {
+            const map = { 'admin': 'مدير النظام', 'sales': 'مبيعات', 'designer': 'مصمم', 'accountant': 'محاسب' };
+            return map[role] || role;
+        }
+
+        function getRoleBadgeColor(role) {
+            const map = { 
+                'admin': 'bg-red-100 text-red-700', 
+                'sales': 'bg-blue-100 text-blue-700', 
+                'designer': 'bg-purple-100 text-purple-700', 
+                'accountant': 'bg-green-100 text-green-700' 
+            };
+            return map[role] || 'bg-gray-100 text-gray-700';
+        }
 
         // --- Logic Handlers ---
         function attachInputListeners() {
@@ -2163,6 +2423,60 @@
                 saveClients();
                 render();
                 alert('تم حفظ عرض السعر بنجاح');
+            }
+        }
+
+        // Accounts Functions
+        function addExpense() {
+            const category = document.getElementById('exp-category').value;
+            const amount = document.getElementById('exp-amount').value;
+            const date = document.getElementById('exp-date').value;
+            const desc = document.getElementById('exp-desc').value;
+
+            if(!amount || !date) return alert('يرجى إدخال المبلغ والتاريخ');
+
+            expenses.push({
+                id: Date.now(),
+                category,
+                amount: parseFloat(amount),
+                date,
+                description: desc
+            });
+            saveExpenses();
+            alert('تم إضافة المصروف بنجاح');
+        }
+
+        function deleteExpense(id) {
+            if(confirm('هل أنت متأكد من حذف هذا المصروف؟')) {
+                expenses = expenses.filter(e => e.id !== id);
+                saveExpenses();
+            }
+        }
+
+        // User Management Functions
+        function addNewUser() {
+            const name = document.getElementById('user-name-input').value;
+            const username = document.getElementById('user-username-input').value;
+            const role = document.getElementById('user-role-input').value;
+
+            if(!name || !username) return alert('يرجى إدخال الاسم واسم المستخدم');
+            if(users.some(u => u.username === username)) return alert('اسم المستخدم موجود مسبقاً');
+
+            users.push({
+                id: Date.now(),
+                name,
+                username,
+                role
+            });
+            saveUsers();
+            alert('تم إضافة المستخدم بنجاح');
+        }
+
+        function deleteUser(id) {
+            if(id === 1) return alert('لا يمكن حذف المدير الرئيسي');
+            if(confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
+                users = users.filter(u => u.id !== id);
+                saveUsers();
             }
         }
 
