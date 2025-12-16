@@ -358,7 +358,7 @@
         // --- Data & Constants ---
         let users = [
             { id: 1, name: 'خالد رمزي', role: 'admin', username: 'admin', password: '123' },
-            { id: 2, name: 'أحمد مندوب', role: 'sales', username: 'sales', password: '123' }
+            { id: 2, name: 'أحمد مندوب', role: 'sales', username: 'sales', password: '123', permissions: ['access_registration', 'access_offers', 'access_archive'] }
         ];
 
         let companySettings = {
@@ -425,6 +425,25 @@
             install_eng: 'مهندس التركيب',
             supervisor: 'مشرف'
         };
+
+        const PERMISSIONS = [
+            { id: 'can_delete', label: 'حذف البيانات' },
+            { id: 'can_export', label: 'تصدير التقارير' },
+            { id: 'edit_clients', label: 'تعديل العملاء' },
+            { id: 'access_registration', label: 'دخول: التسجيل' },
+            { id: 'access_measurements', label: 'دخول: المقاسات' },
+            { id: 'access_design', label: 'دخول: التصميم' },
+            { id: 'access_pricing', label: 'دخول: التسعير' },
+            { id: 'access_installation', label: 'دخول: التركيب' },
+            { id: 'access_completed', label: 'دخول: المشاريع المنتهية' },
+            { id: 'access_archive', label: 'دخول: الأرشيف' },
+            { id: 'access_offers', label: 'دخول: العروض' },
+            { id: 'access_financials', label: 'دخول: المالية' },
+            { id: 'access_accounts', label: 'دخول: الحسابات' },
+            { id: 'access_reports', label: 'دخول: التقارير' },
+            { id: 'access_users', label: 'دخول: المستخدمين' },
+            { id: 'access_settings', label: 'دخول: الإعدادات' }
+        ];
 
         const STATUS_OPTIONS = [
             { id: 'new', label: 'جديد', color: 'bg-blue-100 text-blue-700 border-blue-200' },
@@ -588,6 +607,14 @@
         }
 
         function switchTab(tabName) {
+            // التحقق من الصلاحيات
+            if (currentUser.role !== 'admin') {
+                const requiredPerm = 'access_' + tabName;
+                if (!currentUser.permissions || !currentUser.permissions.includes(requiredPerm)) {
+                    return alert('عذراً، ليس لديك صلاحية للوصول لهذه الصفحة.');
+                }
+            }
+
             activeTab = tabName;
             
             document.querySelectorAll('nav button').forEach(btn => {
@@ -644,6 +671,22 @@
             }
         }
 
+        function applyUserPermissions() {
+            const tabs = [
+                'registration', 'measurements', 'design', 'pricing', 'installation', 
+                'completed', 'archive', 'offers', 'financials', 'accounts', 
+                'reports', 'users', 'settings'
+            ];
+            
+            tabs.forEach(tab => {
+                const el = document.getElementById('nav-' + tab);
+                if (el) {
+                    const hasAccess = currentUser.role === 'admin' || (currentUser.permissions && currentUser.permissions.includes('access_' + tab));
+                    hasAccess ? el.classList.remove('hidden') : el.classList.add('hidden');
+                }
+            });
+        }
+
         // --- Render Views ---
 
         function render() {
@@ -685,6 +728,7 @@
             attachInputListeners();
             updateFloatingButton();
             updateNotificationBadge();
+            applyUserPermissions();
 
             if (activeTab === 'reports') {
                 initReportsCharts();
@@ -2667,6 +2711,7 @@
                                             <th class="p-3">اسم المستخدم</th>
                                             <th class="p-3">كلمة المرور</th>
                                             <th class="p-3">الصلاحية</th>
+                                            <th class="p-3">أذونات خاصة</th>
                                             <th class="p-3 text-center">إجراءات</th>
                                         </tr>
                                     </thead>
@@ -2680,6 +2725,15 @@
                                                     <span class="px-2.5 py-1 rounded-full text-xs font-bold ${getRoleBadgeColor(u.role)}">
                                                         ${USER_ROLES[u.role] || u.role}
                                                     </span>
+                                                </td>
+                                                <td class="p-3">
+                                                    <div class="flex flex-wrap gap-1">
+                                                        ${(u.permissions || []).map(p => {
+                                                            const perm = PERMISSIONS.find(x => x.id === p);
+                                                            return perm ? `<span class="text-[10px] bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-1 rounded text-slate-500 dark:text-slate-400">${perm.label}</span>` : '';
+                                                        }).join('')}
+                                                        ${(!u.permissions || u.permissions.length === 0) ? '<span class="text-xs text-slate-300">-</span>' : ''}
+                                                    </div>
                                                 </td>
                                                 <td class="p-3 text-center">
                                                     <button onclick="deleteUser(${u.id})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition-colors" ${u.id === 1 ? 'disabled opacity-50 cursor-not-allowed' : ''}>
@@ -2718,6 +2772,17 @@
                                         <select id="user-role-input" class="form-input bg-white dark:bg-slate-700">
                                             ${Object.entries(USER_ROLES).map(([k,v]) => `<option value="${k}">${v}</option>`).join('')}
                                         </select>
+                                    </div>
+                                    <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
+                                        <label class="form-label text-xs">صلاحيات إضافية</label>
+                                        <div class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                                            ${PERMISSIONS.map(p => `
+                                                <div class="flex items-center gap-2">
+                                                    <input type="checkbox" id="perm-${p.id}" value="${p.id}" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer">
+                                                    <label for="perm-${p.id}" class="text-xs text-slate-600 dark:text-slate-300 select-none cursor-pointer">${p.label}</label>
+                                                </div>
+                                            `).join('')}
+                                        </div>
                                     </div>
                                     <button onclick="addNewUser()" class="w-full bg-[#0f3057] text-white py-3 rounded-lg hover:bg-[#1a4b82] shadow-lg shadow-blue-900/20 font-bold flex items-center justify-center gap-2 transition-all active:scale-95 mt-2">
                                         <i data-lucide="save" class="w-4 h-4"></i> حفظ المستخدم
@@ -4111,6 +4176,11 @@
             const username = document.getElementById('user-username-input').value;
             const password = document.getElementById('user-password-input').value;
             const role = document.getElementById('user-role-input').value;
+            
+            const permissions = [];
+            document.querySelectorAll('input[id^="perm-"]:checked').forEach(cb => {
+                permissions.push(cb.value);
+            });
 
             if(!name || !username || !password) return alert('يرجى إدخال جميع البيانات');
             if(users.some(u => u.username === username)) return alert('اسم المستخدم موجود مسبقاً');
@@ -4120,7 +4190,8 @@
                 name,
                 username,
                 password,
-                role
+                role,
+                permissions
             });
             saveUsers();
             alert('تم إضافة المستخدم بنجاح');
