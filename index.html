@@ -1281,6 +1281,347 @@
         // 4. Installation View
         function renderInstallationView(data) {
             const selectedClient = selectedClientForInstallId ? clients.find(c => c.id == selectedClientForInstallId) : null;
+            // Calculate financials
+            const total = selectedClient ? (parseFloat(selectedClient.design.total) || 0) : 0;
+            const firstPay = selectedClient ? (parseFloat(selectedClient.design.firstPayment) || 0) : 0;
+            const remaining = total - firstPay;
+            const isFinalPaid = selectedClient?.installation?.finalPaymentPaid || false;
+            
+            // Get items for upload sections
+            const items = selectedClient ? getMeasurementItems(selectedClient) : [];
+
+            return `
+                <div class="space-y-6 animate-fadeIn">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Main Content -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 border-t-4 border-t-orange-500 transition-colors">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="font-bold text-slate-800 dark:text-white text-lg flex items-center gap-2">
+                                        <span class="p-2 bg-orange-100 rounded-lg text-orange-600"><i data-lucide="wrench" class="w-5 h-5"></i></span>
+                                        إدارة التركيبات والتسليم
+                                    </h3>
+                                    ${selectedClient ? `<span class="text-xs font-mono bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-500">${selectedClient.code}</span>` : ''}
+                                </div>
+
+                                <!-- Client Selection -->
+                                <div class="mb-8">
+                                    <label class="form-label">اختيار العميل (مرحلة التركيب)</label>
+                                    <div class="relative">
+                                        <select onchange="selectClientForInstall(this.value)" class="form-input appearance-none bg-slate-50 dark:bg-slate-700 cursor-pointer">
+                                            <option value="">اختر عميل...</option>
+                                            ${clients.filter(c => c.design.signed && c.status !== 'completed').map(c => `<option value="${c.id}" ${c.id == selectedClientForInstallId ? 'selected' : ''}>${c.name}</option>`).join('')}
+                                        </select>
+                                        <i data-lucide="chevron-down" class="absolute left-3 top-3.5 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                                    </div>
+                                </div>
+
+                                <div class="${!selectedClient ? 'opacity-50 pointer-events-none filter blur-sm' : ''} space-y-8">
+                                    
+                                    <!-- 1. Project & Design Info (Read Only) -->
+                                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                        <h4 class="font-bold text-slate-700 dark:text-slate-200 mb-3 text-sm flex items-center gap-2">
+                                            <i data-lucide="folder-open" class="w-4 h-4 text-blue-500"></i> ملفات التصميم والملاحظات
+                                        </h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <p class="text-xs text-slate-500 mb-1">التصاميم المعتمدة:</p>
+                                                <div class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                                    ${selectedClient?.design?.itemFiles ? Object.values(selectedClient.design.itemFiles).flat().map(f => `
+                                                        <div onclick="openLightbox('${f.url}')" class="w-16 h-16 flex-shrink-0 rounded-lg border border-slate-200 overflow-hidden cursor-pointer bg-white">
+                                                            <img src="${f.url}" class="w-full h-full object-cover">
+                                                        </div>
+                                                    `).join('') : '<span class="text-xs text-slate-400">لا توجد تصاميم</span>'}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-slate-500 mb-1">ملاحظات التصميم:</p>
+                                                <div class="text-xs bg-white dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-600 h-16 overflow-y-auto">
+                                                    ${selectedClient?.design?.itemNotes ? Object.values(selectedClient.design.itemNotes).join('<br>') : 'لا توجد ملاحظات'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. Financials & Final Payment -->
+                                    <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-5 border border-green-100 dark:border-green-800">
+                                        <h4 class="font-bold text-green-800 dark:text-green-400 mb-4 text-sm flex items-center gap-2">
+                                            <i data-lucide="banknote" class="w-4 h-4"></i> المتابعة المالية (الدفعة الأخيرة)
+                                        </h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                            <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-green-100 dark:border-green-700">
+                                                <span class="text-xs text-slate-500 block">إجمالي العقد</span>
+                                                <span class="font-bold text-slate-800 dark:text-white">${total.toLocaleString()} ريال</span>
+                                            </div>
+                                            <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-green-100 dark:border-green-700">
+                                                <span class="text-xs text-slate-500 block">الدفعة الأولى (مدفوعة)</span>
+                                                <span class="font-bold text-green-600">${firstPay.toLocaleString()} ريال</span>
+                                            </div>
+                                            <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-red-100 dark:border-red-900/50">
+                                                <span class="text-xs text-slate-500 block">الدفعة الأخيرة (المتبقي)</span>
+                                                <span class="font-bold text-red-500">${remaining.toLocaleString()} ريال</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-800 p-3 rounded-lg border border-green-200 dark:border-green-700">
+                                            <div class="flex items-center gap-3">
+                                                <input type="checkbox" id="final-payment-check" onchange="toggleFinalPayment(this.checked)" ${isFinalPaid ? 'checked' : ''} class="w-5 h-5 text-green-600 rounded cursor-pointer">
+                                                <label for="final-payment-check" class="font-bold text-sm text-slate-700 dark:text-slate-200 cursor-pointer select-none">
+                                                    تم استلام الدفعة الأخيرة بالكامل
+                                                </label>
+                                            </div>
+                                            <button onclick="sendPaymentReminder(${remaining})" class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-3 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors">
+                                                <i data-lucide="message-circle" class="w-3 h-3"></i> إرسال مطالبة بالسداد
+                                            </button>
+                                        </div>
+                                        ${(() => {
+                                            // 15 days warning logic
+                                            if(selectedClient?.installation?.startDate && !isFinalPaid) {
+                                                const installDate = new Date(selectedClient.installation.startDate);
+                                                const today = new Date();
+                                                const diffTime = installDate - today;
+                                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                                if(diffDays <= 15 && diffDays >= 0) {
+                                                    return `<div class="mt-3 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100 flex items-center gap-2"><i data-lucide="alert-circle" class="w-4 h-4"></i> تنبيه: موعد التركيب اقترب (${diffDays} يوم). يرجى تحصيل الدفعة الأخيرة!</div>`;
+                                                }
+                                            }
+                                            return '';
+                                        })()}
+                                    </div>
+
+                                    <!-- 3. Scheduling -->
+                                    <div class="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-5 border border-orange-100 dark:border-orange-800">
+                                        <h4 class="font-bold text-orange-800 dark:text-orange-400 mb-4 text-sm flex items-center gap-2">
+                                            <i data-lucide="calendar" class="w-4 h-4"></i> جدولة التركيب
+                                        </h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                                            <div class="space-y-1">
+                                                <label class="form-label">تاريخ التركيب المحدد</label>
+                                                <input type="date" id="install-date-input" value="${selectedClient?.installation?.startDate || ''}" class="form-input">
+                                            </div>
+                                            <div class="space-y-1">
+                                                <label class="form-label">رقم أمر الشغل (Job No)</label>
+                                                <input type="text" id="install-job-input" value="${selectedClient?.installation?.jobNo || ''}" class="form-input font-mono" placeholder="JOB-XXX">
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-wrap gap-3 mt-4">
+                                            <button onclick="saveInstallationSchedule()" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 text-xs font-bold flex items-center gap-2">
+                                                <i data-lucide="save" class="w-3 h-3"></i> حفظ الموعد
+                                            </button>
+                                            <button onclick="sendInstallConfirmation()" class="bg-white border border-orange-200 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-50 text-xs font-bold flex items-center gap-2">
+                                                <i data-lucide="message-circle" class="w-3 h-3"></i> إخطار العميل بالموعد
+                                            </button>
+                                            <button onclick="sendTeamOnWay()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-xs font-bold flex items-center gap-2 ml-auto">
+                                                <i data-lucide="truck" class="w-3 h-3"></i> الفريق في الطريق
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 4. Post-Installation Uploads -->
+                                    <div class="space-y-4">
+                                        <h4 class="font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-2 flex items-center gap-2">
+                                            <i data-lucide="camera" class="w-5 h-5 text-purple-500"></i> توثيق التركيب (صور/فيديو)
+                                        </h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            ${items.map(item => {
+                                                const files = (selectedClient?.installation?.postInstallFiles && selectedClient.installation.postInstallFiles[item.id]) || [];
+                                                return `
+                                                    <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                                                        <div class="flex justify-between items-center mb-2">
+                                                            <span class="font-bold text-sm text-slate-700 dark:text-slate-200">${item.label}</span>
+                                                            <div class="relative">
+                                                                <button class="text-[10px] bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100 transition flex items-center gap-1">
+                                                                    <i data-lucide="upload" class="w-3 h-3"></i> رفع
+                                                                </button>
+                                                                <input type="file" multiple accept="image/*,video/*" onchange="handlePostInstallUpload(this, '${item.id}')" class="absolute inset-0 opacity-0 cursor-pointer">
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex gap-2 overflow-x-auto pb-1 custom-scrollbar h-16">
+                                                            ${files.map(f => `
+                                                                <div onclick="openLightbox('${f.url}')" class="w-16 h-16 flex-shrink-0 rounded bg-slate-100 border border-slate-200 overflow-hidden cursor-pointer relative group">
+                                                                    ${f.type.startsWith('video') ? '<div class="absolute inset-0 flex items-center justify-center bg-black/30"><i data-lucide="play" class="w-6 h-6 text-white"></i></div>' : ''}
+                                                                    <img src="${f.url}" class="w-full h-full object-cover">
+                                                                </div>
+                                                            `).join('')}
+                                                            ${files.length === 0 ? '<span class="text-[10px] text-slate-400 self-center">لا توجد صور</span>' : ''}
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+
+                                    <!-- 5. Handover & Completion -->
+                                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                                        <h4 class="font-bold text-slate-700 dark:text-slate-200 mb-4 text-sm flex items-center gap-2">
+                                            <i data-lucide="file-check" class="w-4 h-4"></i> تسليم المشروع وإغلاقه
+                                        </h4>
+                                        <div class="flex flex-col md:flex-row gap-6 items-start">
+                                            <div class="flex-1 w-full">
+                                                <label class="text-xs font-bold text-slate-500 mb-2 block">إيصال الاستلام الموقع (صورة)</label>
+                                                <div class="upload-zone bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-blue-50 transition-all h-32 relative rounded-xl">
+                                                    <input type="file" accept="image/*" onchange="handleDeliveryReceiptUpload(this)" class="absolute inset-0 opacity-0 cursor-pointer">
+                                                    ${selectedClient?.installation?.deliveryReceipt ? 
+                                                        `<div class="relative w-full h-full"><img src="${selectedClient.installation.deliveryReceipt}" class="w-full h-full object-contain"><div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition">تغيير</div></div>` : 
+                                                        `<i data-lucide="file-signature" class="w-8 h-8 text-slate-400 mb-2"></i><span class="text-xs font-bold text-slate-600">رفع الإيصال</span>`
+                                                    }
+                                                </div>
+                                            </div>
+                                            <div class="flex-1 w-full flex flex-col justify-end h-full pt-6">
+                                                <button onclick="completeProject()" class="w-full bg-green-600 text-white py-4 rounded-xl hover:bg-green-700 shadow-lg shadow-green-900/20 font-bold text-lg flex items-center justify-center gap-2 transition-transform active:scale-95 ${(!isFinalPaid || !selectedClient?.installation?.deliveryReceipt) ? 'opacity-50 cursor-not-allowed' : ''}">
+                                                    <i data-lucide="check-circle-2" class="w-6 h-6"></i> تم التركيب وإغلاق المشروع
+                                                </button>
+                                                <p class="text-[10px] text-slate-400 text-center mt-2">يجب سداد الدفعة الأخيرة ورفع إيصال الاستلام لتفعيل الزر</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sidebar Info -->
+                        <div class="lg:col-span-1 space-y-4">
+                            ${renderClientInfoCard(selectedClient)}
+                            ${selectedClient ? `
+                            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-4">
+                                <h4 class="font-bold text-sm mb-2">العنوان</h4>
+                                <p class="text-sm text-slate-600 dark:text-slate-300">${selectedClient.address}</p>
+                                ${selectedClient.location ? `<a href="${selectedClient.location}" target="_blank" class="text-blue-600 text-xs flex items-center gap-1 mt-2 hover:underline"><i data-lucide="map-pin" class="w-3 h-3"></i> فتح الموقع</a>` : ''}
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleFinalPayment(checked) {
+            if (!selectedClientForInstallId) return;
+            const client = clients.find(c => c.id == selectedClientForInstallId);
+            if (client) {
+                if (!client.installation) client.installation = {};
+                client.installation.finalPaymentPaid = checked;
+                if(checked) {
+                    client.installation.lastPayment = (parseFloat(client.design.total) - parseFloat(client.design.firstPayment));
+                    client.logs.push({ date: new Date().toLocaleDateString('en-US'), type: 'system', text: 'تم تسجيل سداد الدفعة الأخيرة' });
+                }
+                saveClients();
+                render();
+            }
+        }
+
+        function sendPaymentReminder(amount) {
+            if (!selectedClientForInstallId) return;
+            const client = clients.find(c => c.id == selectedClientForInstallId);
+            if (client) {
+                const msg = `مرحباً ${client.name}،\nنود تذكيركم بقرب موعد التركيب.\nيرجى التكرم بسداد الدفعة الأخيرة المتبقية وقدرها (${amount.toLocaleString()} ريال) لضمان اعتماد موعد التركيب.\nشكراً لتعاونكم.`;
+                const url = `https://wa.me/${client.whatsapp || client.phone}?text=${encodeURIComponent(msg)}`;
+                window.open(url, '_blank');
+            }
+        }
+
+        function saveInstallationSchedule() {
+            if (!selectedClientForInstallId) return;
+            const client = clients.find(c => c.id == selectedClientForInstallId);
+            if (client) {
+                const date = document.getElementById('install-date-input').value;
+                const job = document.getElementById('install-job-input').value;
+                
+                if(!client.installation) client.installation = {};
+                client.installation.startDate = date;
+                client.installation.jobNo = job;
+                client.status = 'installation';
+                
+                client.logs.push({ date: new Date().toLocaleDateString('en-US'), type: 'system', text: `تم تحديث موعد التركيب: ${date}` });
+                saveClients();
+                render();
+                alert('تم حفظ البيانات بنجاح');
+            }
+        }
+
+        function sendInstallConfirmation() {
+            if (!selectedClientForInstallId) return;
+            const client = clients.find(c => c.id == selectedClientForInstallId);
+            if (client && client.installation?.startDate) {
+                const msg = `مرحباً ${client.name}،\nنؤكد لكم موعد التركيب المحدد بتاريخ: ${client.installation.startDate}.\nنرجو التواجد في الموقع.\nشكراً لاختياركم بيت الخزائن.`;
+                const url = `https://wa.me/${client.whatsapp || client.phone}?text=${encodeURIComponent(msg)}`;
+                window.open(url, '_blank');
+            } else {
+                alert('يرجى تحديد تاريخ التركيب وحفظه أولاً');
+            }
+        }
+
+        function sendTeamOnWay() {
+            if (!selectedClientForInstallId) return;
+            const client = clients.find(c => c.id == selectedClientForInstallId);
+            if (client) {
+                const msg = `مرحباً ${client.name}،\nفريق التركيب في الطريق إليكم الآن 🚚\nيرجى الاستعداد لاستقبالهم.`;
+                const url = `https://wa.me/${client.whatsapp || client.phone}?text=${encodeURIComponent(msg)}`;
+                window.open(url, '_blank');
+            }
+        }
+
+        function handlePostInstallUpload(input, itemId) {
+            if (!selectedClientForInstallId || !input.files || input.files.length === 0) return;
+            const client = clients.find(c => c.id == selectedClientForInstallId);
+            if (!client) return;
+
+            if (!client.installation.postInstallFiles) client.installation.postInstallFiles = {};
+            if (!client.installation.postInstallFiles[itemId]) client.installation.postInstallFiles[itemId] = [];
+
+            Array.from(input.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    client.installation.postInstallFiles[itemId].push({
+                        type: file.type,
+                        url: e.target.result,
+                        name: file.name
+                    });
+                    saveClients();
+                    render();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function handleDeliveryReceiptUpload(input) {
+            if (!selectedClientForInstallId || !input.files || input.files.length === 0) return;
+            const client = clients.find(c => c.id == selectedClientForInstallId);
+            if (!client) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                client.installation.deliveryReceipt = e.target.result;
+                saveClients();
+                render();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        function completeProject() {
+            if (!selectedClientForInstallId) return;
+            const client = clients.find(c => c.id == selectedClientForInstallId);
+            if (client) {
+                if(!client.installation.finalPaymentPaid) return alert('يجب سداد الدفعة الأخيرة أولاً');
+                if(!client.installation.deliveryReceipt) return alert('يجب رفع إيصال الاستلام');
+
+                if(confirm('هل أنت متأكد من إغلاق المشروع؟ سيتم تحويل الحالة إلى "مكتمل".')) {
+                    client.status = 'completed';
+                    client.installation.endDate = new Date().toLocaleDateString('en-US');
+                    client.logs.push({ date: new Date().toLocaleDateString('en-US'), type: 'system', text: 'تم إغلاق المشروع واكتمال التركيب' });
+                    saveClients();
+                    selectedClientForInstallId = null; // Deselect
+                    render();
+                    alert('مبروك! تم إكمال المشروع بنجاح 🎉');
+                }
+            }
+        }
+
+        /*
+        // 4. Installation View (Old Version - Replaced above)
+        function renderInstallationView_OLD(data) {
+            const selectedClient = selectedClientForInstallId ? clients.find(c => c.id == selectedClientForInstallId) : null;
 
             return `
                 <div class="space-y-6 animate-fadeIn">
@@ -1350,7 +1691,8 @@
                     </div>
                 </div>
             `;
-        }
+        } 
+        */
 
         // 5. Offers View
         function renderOffersView(data) {
