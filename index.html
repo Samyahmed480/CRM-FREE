@@ -383,8 +383,16 @@
         }
 
         function saveClients() {
-            localStorage.setItem('crm_clients_data', JSON.stringify(clients));
-            render();
+            try {
+                localStorage.setItem('crm_clients_data', JSON.stringify(clients));
+                render();
+            } catch (e) {
+                if (e.name === 'QuotaExceededError' || e.code === 22) {
+                    alert('عذراً، ذاكرة التخزين ممتلئة! لا يمكن حفظ المزيد من الصور أو الفيديوهات. يرجى حذف بعض الملفات القديمة.');
+                } else {
+                    alert('حدث خطأ أثناء الحفظ: ' + e.message);
+                }
+            }
         }
 
         function loadSettings() {
@@ -834,23 +842,46 @@
                                 
                                 <div class="grid grid-cols-1 gap-4">
                                     ${selectedClient ? getMeasurementItems(selectedClient).map(item => `
+                                        ${(() => {
+                                            const mFiles = (selectedClient.measurements.itemFiles && selectedClient.measurements.itemFiles[item.id]) || [];
+                                            return `
                                         <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm hover:border-indigo-300 transition-colors">
                                             <h5 class="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
                                                 <span class="w-2 h-2 rounded-full bg-indigo-500"></span> ${item.label}
                                             </h5>
                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div class="upload-zone bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all h-32">
+                                                <div class="upload-zone bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all h-32 relative">
+                                                    <input type="file" multiple accept="image/*,video/*" onchange="handleMeasurementUpload(this, '${item.id}', 'site')" class="absolute inset-0 opacity-0 cursor-pointer">
                                                     <i data-lucide="image" class="w-6 h-6 text-slate-400 mb-2"></i>
                                                     <span class="text-xs font-bold text-slate-600">صور/فيديو الموقع (قبل)</span>
                                                     <span class="text-[10px] text-slate-400 mt-1">JPG, MP4</span>
                                                 </div>
-                                                <div class="upload-zone bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-all h-32">
+                                                <div class="upload-zone bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-all h-32 relative">
+                                                    <input type="file" multiple accept="image/*,.pdf" onchange="handleMeasurementUpload(this, '${item.id}', 'croquis')" class="absolute inset-0 opacity-0 cursor-pointer">
                                                     <i data-lucide="pen-tool" class="w-6 h-6 text-slate-400 mb-2"></i>
                                                     <span class="text-xs font-bold text-slate-600">كروكي المقاسات</span>
                                                     <span class="text-[10px] text-slate-400 mt-1">PDF, PNG</span>
                                                 </div>
                                             </div>
+                                            
+                                            <!-- Uploaded Files Preview -->
+                                            <div class="grid grid-cols-4 gap-2 mt-4">
+                                                ${mFiles.map((file, idx) => `
+                                                    <div class="relative group aspect-square bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                                                        ${file.type.startsWith('video') ? 
+                                                            `<video src="${file.url}" class="w-full h-full object-cover" controls></video>` :
+                                                            (file.type.includes('pdf') ? 
+                                                                `<div onclick="window.open('${file.url}')" class="w-full h-full flex flex-col items-center justify-center cursor-pointer"><i data-lucide="file-text" class="w-6 h-6 text-red-500"></i><span class="text-[8px] mt-1 truncate w-full text-center">${file.name}</span></div>` :
+                                                                `<img src="${file.url}" onclick="openLightbox('${file.url}')" class="w-full h-full object-cover cursor-zoom-in">`
+                                                            )
+                                                        }
+                                                        <button onclick="deleteMeasurementFile('${item.id}', ${idx})" class="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
                                         </div>
+                                            `;
+                                        })()}
                                     `).join('') : '<div class="text-center py-8 text-slate-400 bg-slate-50 dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">اختر عميلاً لعرض البنود</div>'}
                                 </div>
                             </div>
@@ -919,16 +950,16 @@
                                     <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
                                         <h3 class="font-bold text-indigo-800 text-sm mb-2 flex items-center gap-2"><i data-lucide="ruler" class="w-4 h-4"></i> ملفات المقاسات</h3>
                                         <div class="space-y-1">
-                                            ${selectedClient?.measurements?.files && selectedClient.measurements.files.length > 0 ? 
-                                                selectedClient.measurements.files.map(f => `
+                                            ${(() => {
+                                                const allFiles = getAllMeasurementFiles(selectedClient);
+                                                return allFiles.length > 0 ? allFiles.map(f => `
                                                     <div class="flex items-center gap-2 text-xs bg-white dark:bg-slate-800 p-2 rounded border border-indigo-100 dark:border-indigo-700">
                                                         <i data-lucide="file" class="w-3 h-3 text-indigo-500"></i>
-                                                        <span class="truncate flex-1 dark:text-slate-300">${f}</span>
-                                                        <button class="text-indigo-600 hover:underline">عرض</button>
+                                                        <span class="truncate flex-1 dark:text-slate-300">${f.name || f}</span>
+                                                        <button onclick="window.open('${f.url || '#'}')" class="text-indigo-600 hover:underline">عرض</button>
                                                     </div>
-                                                `).join('') 
-                                                : '<span class="text-xs text-slate-400">لا توجد ملفات مقاسات مرفقة</span>'
-                                            }
+                                                `).join('') : '<span class="text-xs text-slate-400">لا توجد ملفات مقاسات مرفقة</span>';
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
@@ -1029,7 +1060,10 @@
         function renderPricingView(data) {
             const selectedClient = selectedClientForPricingId ? clients.find(c => c.id == selectedClientForPricingId) : null;
             const items = selectedClient ? (selectedClient.quotationItems || []) : [];
-            const totalAmount = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+            const subTotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+            const taxRate = parseFloat(companySettings.taxRate) || 0;
+            const taxAmount = subTotal * (taxRate / 100);
+            const totalAmount = subTotal + taxAmount;
 
             return `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
@@ -1108,7 +1142,15 @@
                                     
                                     <div class="bg-slate-100 dark:bg-slate-900 p-5 rounded-xl min-w-[300px] space-y-3">
                                         <div class="flex justify-between text-sm">
-                                            <span class="text-slate-500">المجموع الكلي:</span>
+                                            <span class="text-slate-500">المجموع قبل الضريبة:</span>
+                                            <span class="font-bold text-slate-800 dark:text-white">${subTotal.toLocaleString()} <span class="text-xs font-normal">SAR</span></span>
+                                        </div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-slate-500">الضريبة (${taxRate}%):</span>
+                                            <span class="font-bold text-red-500">${taxAmount.toLocaleString()} <span class="text-xs font-normal">SAR</span></span>
+                                        </div>
+                                        <div class="flex justify-between text-sm border-t border-slate-200 dark:border-slate-700 pt-2 mt-2">
+                                            <span class="text-slate-500 font-bold">المجموع الكلي:</span>
                                             <span class="font-bold text-lg text-slate-800 dark:text-white">${totalAmount.toLocaleString()} <span class="text-xs font-normal">SAR</span></span>
                                         </div>
                                         <div class="flex justify-between items-center gap-4">
@@ -1487,6 +1529,26 @@
                                     <input type="text" id="set-tax" value="${companySettings.taxId}" class="form-input font-mono">
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Database Management -->
+                        <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">
+                            <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                <i data-lucide="database" class="w-5 h-5 text-slate-400"></i> إدارة البيانات
+                            </h3>
+                            <div class="flex flex-wrap gap-4">
+                                <button onclick="exportBackup()" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 shadow-lg shadow-green-900/20 font-bold flex items-center gap-2 transition-all">
+                                    <i data-lucide="download" class="w-5 h-5"></i> تصدير نسخة احتياطية (Backup)
+                                </button>
+                                
+                                <div class="relative">
+                                    <button class="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 shadow-lg shadow-orange-900/20 font-bold flex items-center gap-2 transition-all">
+                                        <i data-lucide="upload" class="w-5 h-5"></i> استعادة نسخة (Restore)
+                                    </button>
+                                    <input type="file" accept=".json" onchange="restoreBackup(this)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2">ملاحظة: استعادة النسخة ستقوم بحذف البيانات الحالية واستبدالها بالنسخة الجديدة.</p>
                         </div>
 
                         <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700 flex justify-end">
@@ -1873,6 +1935,50 @@
             }
         }
 
+        function handleMeasurementUpload(input, itemId, type) {
+            if (!selectedClientId || !input.files || input.files.length === 0) return;
+            const client = clients.find(c => c.id == selectedClientId);
+            if (!client) return;
+
+            if (!client.measurements.itemFiles) client.measurements.itemFiles = {};
+            if (!client.measurements.itemFiles[itemId]) client.measurements.itemFiles[itemId] = [];
+
+            Array.from(input.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    client.measurements.itemFiles[itemId].push({
+                        type: file.type,
+                        url: e.target.result,
+                        name: file.name,
+                        category: type // 'site' or 'croquis'
+                    });
+                    saveClients();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function deleteMeasurementFile(itemId, idx) {
+            const client = clients.find(c => c.id == selectedClientId);
+            if (client && client.measurements.itemFiles && client.measurements.itemFiles[itemId]) {
+                if(confirm('هل أنت متأكد من حذف هذا الملف؟')) {
+                    client.measurements.itemFiles[itemId].splice(idx, 1);
+                    saveClients();
+                }
+            }
+        }
+
+        function getAllMeasurementFiles(client) {
+            let files = [];
+            if (client?.measurements?.files) {
+                client.measurements.files.forEach(f => files.push(typeof f === 'string' ? { name: f, url: '#', type: 'application/pdf' } : f));
+            }
+            if (client?.measurements?.itemFiles) {
+                Object.values(client.measurements.itemFiles).forEach(arr => files.push(...arr));
+            }
+            return files;
+        }
+
         // Design Images Logic
         function handleDesignImageUpload(input) {
             if (!selectedClientForDesignId || !input.files || input.files.length === 0) return;
@@ -2025,7 +2131,9 @@
             const client = clients.find(c => c.id == selectedClientForPricingId);
             if (client) {
                 const items = client.quotationItems || [];
-                const total = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+                const subTotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+                const taxRate = parseFloat(companySettings.taxRate) || 0;
+                const total = subTotal + (subTotal * (taxRate / 100));
                 const first = document.getElementById('pricing-first-payment').value;
                 const signed = document.getElementById('signed-pricing').checked;
 
@@ -2114,7 +2222,7 @@
 
             // Prepare Files HTML
             let filesHtml = '';
-            const measureFiles = client.measurements?.files || [];
+            const measureFiles = getAllMeasurementFiles(client);
             const designFiles = [];
             if(client.design?.itemFiles) {
                 Object.values(client.design.itemFiles).forEach(arr => designFiles.push(...arr));
@@ -2128,7 +2236,7 @@
                             ${measureFiles.map(f => `
                                 <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-700 flex items-center gap-2">
                                     <i data-lucide="ruler" class="w-4 h-4 text-indigo-500"></i>
-                                    <span class="text-xs truncate dark:text-slate-300" title="${f}">${f}</span>
+                                    <span class="text-xs truncate dark:text-slate-300" title="${f.name}">${f.name}</span>
                                 </div>
                             `).join('')}
                             ${designFiles.map(f => `
@@ -2375,6 +2483,13 @@
                         </div>
                     </div>
 
+                    <div style="margin-top: 40px; page-break-inside: avoid;">
+                        <h3 style="border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 15px; color: #0f3057;">الشروط والأحكام</h3>
+                        <div style="font-size: 12px; color: #334155; line-height: 1.8; white-space: pre-line;">
+                            ${companySettings.contractTerms || 'لا توجد شروط إضافية.'}
+                        </div>
+                    </div>
+
                     <div class="footer">
                         <p>تم إصدار هذا المستند إلكترونياً من نظام إدارة العملاء CRP</p>
                         <p>العنوان: الرياض - طريق الملك فهد - برج العليا</p>
@@ -2502,7 +2617,10 @@
             if(!client) return;
 
             const items = client.quotationItems || [];
-            const total = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+            const subTotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+            const taxRate = parseFloat(companySettings.taxRate) || 0;
+            const taxAmount = subTotal * (taxRate / 100);
+            const total = subTotal + taxAmount;
 
             const printWindow = window.open('', '_blank');
             const logo = companySettings.logo ? `<img src="${companySettings.logo}" style="width: 80px; height: 80px; object-fit: contain;">` : `
@@ -2594,12 +2712,24 @@
                     </table>
 
                     <div class="total-section">
+                        <div class="total-row">
+                            <span>المجموع قبل الضريبة</span>
+                            <span>${subTotal.toLocaleString()} ريال</span>
+                        </div>
+                        <div class="total-row">
+                            <span>الضريبة (${taxRate}%)</span>
+                            <span>${taxAmount.toLocaleString()} ريال</span>
+                        </div>
                         <div class="total-row final">
                             <span>المجموع الكلي</span>
                             <span>${total.toLocaleString()} ريال</span>
                         </div>
-                        <div class="total-row" style="margin-top: 10px; font-size: 12px; color: #64748b;">
-                            <span>الأسعار تشمل ضريبة القيمة المضافة</span>
+                    </div>
+
+                    <div style="margin-top: 40px; page-break-inside: avoid;">
+                        <h3 style="border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 15px; color: #0f3057;">الشروط والأحكام</h3>
+                        <div style="font-size: 12px; color: #334155; line-height: 1.8; white-space: pre-line;">
+                            ${companySettings.contractTerms || 'لا توجد شروط إضافية.'}
                         </div>
                     </div>
 
@@ -2612,6 +2742,56 @@
                 </html>
             `);
             printWindow.document.close();
+        }
+
+        // Backup & Restore Functions
+        function exportBackup() {
+            const backupData = {
+                clients: clients,
+                settings: companySettings,
+                version: '1.0',
+                date: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], {type : 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CRP_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function restoreBackup(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (!confirm('تحذير: سيتم استبدال جميع البيانات الحالية بالبيانات الموجودة في ملف النسخة الاحتياطية. هل أنت متأكد من المتابعة؟')) {
+                input.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const backup = JSON.parse(e.target.result);
+                    if (backup.clients) {
+                        clients = backup.clients;
+                        localStorage.setItem('crm_clients_data', JSON.stringify(clients));
+                    }
+                    if (backup.settings) {
+                        companySettings = { ...companySettings, ...backup.settings };
+                        localStorage.setItem('crm_settings', JSON.stringify(companySettings));
+                    }
+                    alert('تم استعادة النسخة الاحتياطية بنجاح!');
+                    location.reload();
+                } catch (error) {
+                    alert('حدث خطأ أثناء استعادة الملف: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
         }
 
         // Lightbox Functions
